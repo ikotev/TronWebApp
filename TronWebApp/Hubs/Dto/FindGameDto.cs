@@ -4,6 +4,6 @@
     {
         public string PlayerName { get; set; }
 
-        public GameBoardDto Board { get; set; }
+        public GameBoardDto PlayerBoard { get; set; }
     }
 }

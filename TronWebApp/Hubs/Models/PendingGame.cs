@@ -4,6 +4,6 @@
     {
         public TronPlayer Player { get; set; }
 
-        public GameBoard Board { get; set; }
+        public GameBoard PlayerBoard { get; set; }
     }
 }

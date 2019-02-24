@@ -31,11 +31,11 @@ namespace TronWebApp.Hubs
                 ConnectionId = Context.ConnectionId
             };
 
-            var board = dto.Board.ToModel();
+            var board = dto.PlayerBoard.ToModel();
 
             var pendingGame = _playersMatchmakingService.TryFind(new PendingGame
             {
-                Board = board,
+                PlayerBoard = board,
                 Player = tronPlayer
             });
 

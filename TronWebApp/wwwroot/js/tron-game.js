@@ -40,15 +40,15 @@ class Player {
         this.direction = directionEnum.none;
         this.canChangeDirection = true;
 
-        this.initTrail(boardPosition);
+        this.initTrail(new TrailPart(boardPosition, direction));
         this.setDirection(direction);
 
         this.isPlaying = true;
     }
 
-    initTrail(boardPosition) {
+    initTrail(trailPart) {
         this.trail = [];
-        this.trail.push(boardPosition);
+        this.trail.push(trailPart);
     }
 
     setDirection(newDirection) {
@@ -86,7 +86,7 @@ class Player {
             return;
         }
 
-        let lastPosition = this.trail[this.trail.length - 1];
+        let lastPosition = this.trail[this.trail.length - 1].position;
         let x = lastPosition.col;
         let y = lastPosition.row;
 
@@ -107,7 +107,7 @@ class Player {
 
         let newPosition = new BoardPosition(x, y);
 
-        this.trail.push(newPosition);
+        this.trail.push(new TrailPart(newPosition, this.direction));
         this.canChangeDirection = true;
     }
 
@@ -145,28 +145,41 @@ class PlayerLayer {
 
         let boardLayer = this.boardLayer;
         let squareXOffset = (boardLayer.squareWidth - this.width) / 2;
-        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;
-        let xOffset = boardLayer.xOffset + squareXOffset;
-        let yOffset = boardLayer.yOffset + squareYOffset;
+        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;        
 
         let trail = playerModel.trail;
 
         ctx.fillStyle = this.color;
 
-        for (let i = 0; i < trail.length; i++) {
-            let row = trail[i].row;
-            let col = trail[i].col;
-            let x = xOffset + col * boardLayer.squareWidth;
-            let y = yOffset + row * boardLayer.squareHeight;
+        for (let i = 0; i < trail.length; i++) {                        
+            let x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
+            let y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
 
-            ctx.fillRect(x, y, this.width, this.height);
+            let width;
+            let height;
+
+            if (!trail[i].isHorizontalMove()) {
+                x += squareXOffset;
+                width = this.width;                                
+            } else {
+                width = boardLayer.squareWidth;
+            }
+
+            if (!trail[i].isVerticalMove()) {
+                y += squareYOffset;                  
+                height = this.height;                
+            } else {
+                height = boardLayer.squareHeight;                
+            }
+
+            ctx.fillRect(x, y, width, height);
         }
     }
 
     drawGameResult(ctx) {
         let trail = this.playerModel.trail;
-        let row = trail[trail.length - 1].row;
-        let col = trail[trail.length - 1].col;
+        let row = trail[trail.length - 1].position.row;
+        let col = trail[trail.length - 1].position.col;
 
         let boardLayer = this.boardLayer;
         let x = boardLayer.xOffset + col * boardLayer.squareWidth;
@@ -228,7 +241,7 @@ class BoardCollisionDetection {
     }
 
     detect(player) {
-        let head = player.trail[player.trail.length - 1];
+        let head = player.trail[player.trail.length - 1].position;
         return !this.board.isPositionInside(head);
     }
 }
@@ -239,7 +252,7 @@ class PlayerCollisionDetection {
     }
 
     detect(player) {
-        let head = player.trail[player.trail.length - 1];
+        let head = player.trail[player.trail.length - 1].position;
 
         if (this.detectTrailCollision(head, player.trail, player.trail.length - 2)) {
             return true;
@@ -257,12 +270,29 @@ class PlayerCollisionDetection {
 
     detectTrailCollision(pos, trail, length) {
         for (let i = 0; i < length; i++) {
-            if (trail[i].col === pos.col && trail[i].row === pos.row) {
+            if (trail[i].position.col === pos.col && trail[i].position.row === pos.row) {
                 return true;
             }
         }
 
         return false;
+    }
+}
+
+class TrailPart {
+    constructor(boardPosition, direction) {
+        this.position = boardPosition;
+        this.direction = direction;
+    }
+
+    isHorizontalMove() {
+        return this.direction === directionEnum.left ||
+            this.direction === directionEnum.right;
+    }
+
+    isVerticalMove() {
+        return this.direction === directionEnum.up ||
+            this.direction === directionEnum.down;
     }
 }
 

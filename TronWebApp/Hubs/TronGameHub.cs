@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
 namespace TronWebApp.Hubs
-{    
+{
     public class TronGameHub : Hub<ITronGameClient>
     {
         private readonly PlayerMatchmakingService _playersMatchmakingService;
@@ -20,11 +20,17 @@ namespace TronWebApp.Hubs
             PlayerSpawnService playerSpawnService)
         {
             _playersMatchmakingService = playersMatchmakingService;
-            _playerSpawnService = playerSpawnService;            
+            _playerSpawnService = playerSpawnService;
         }
 
         public async Task FindGame(FindGameDto dto)
         {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.PlayerName) || dto.PlayerBoard == null ||
+                dto.PlayerBoard.Rows <= 0 || dto.PlayerBoard.Cols <= 0)
+            {
+                throw new ArgumentException(nameof(FindGameDto));
+            }
+
             var tronPlayer = new TronPlayer
             {
                 Name = dto.PlayerName,
@@ -55,6 +61,11 @@ namespace TronWebApp.Hubs
 
         public async Task DirectionChanged(DirectionChangedDto dto)
         {
+            if (dto == null || !Enum.IsDefined(typeof(PlayerDirection), dto.Direction))
+            {
+                throw new ArgumentException(nameof(FindGameDto));
+            }
+
             var connectionId = Context.ConnectionId;
             TronGame game;
 
@@ -73,22 +84,27 @@ namespace TronWebApp.Hubs
                         Direction = dto.Direction,
                         PlayerName = playerName
                     });
-            }            
+            }
         }
 
         public async Task GameFinished(GameFinishedDto dto)
         {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.WinnerName))
+            {
+                throw new ArgumentException(nameof(FindGameDto));
+            }
+
             var connectionId = Context.ConnectionId;
             TronGame game;
 
             lock (PlayerGameMapLock)
             {
                 if (PlayerGameMap.TryGetValue(connectionId, out game))
-                {                    
+                {
                     foreach (var player in game.Players)
                     {
                         PlayerGameMap.Remove(player.ConnectionId, out _);
-                    }                    
+                    }
                 }
             }
 
@@ -101,7 +117,7 @@ namespace TronWebApp.Hubs
                 {
                     await Groups.RemoveFromGroupAsync(player.ConnectionId, game.GroupName);
                 }
-            }            
+            }
         }
 
         private async Task StartGame(TronGame game)
@@ -156,10 +172,10 @@ namespace TronWebApp.Hubs
                 {
                     PlayerGameMap.Add(player.ConnectionId, game);
                 }
-            }            
+            }
 
             foreach (var player in players)
-            {                
+            {
                 await Groups.AddToGroupAsync(player.ConnectionId, groupName);
             }
 

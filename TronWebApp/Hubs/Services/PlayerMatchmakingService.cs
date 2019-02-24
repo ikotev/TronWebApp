@@ -13,7 +13,8 @@ namespace TronWebApp.Hubs
 
             lock (PendingGamesLock)
             {                
-                var index = PendingGames.FindIndex(p => p.PlayerBoard.Cols == game.PlayerBoard.Cols && p.PlayerBoard.Rows == game.PlayerBoard.Rows);
+                var index = PendingGames.FindIndex(p => p.PlayerBoard.Cols == game.PlayerBoard.Cols && p.PlayerBoard.Rows == game.PlayerBoard.Rows &&
+                                                        p.Player.ConnectionId != game.Player.ConnectionId);
 
                 if (index > -1)
                 {

@@ -28,7 +28,7 @@ class Player {
     constructor({ name }) {
         this.name = name;
         this.direction = directionEnum.none;
-        this.lastMovedDirection = directionEnum.none;
+        this.canChangeDirection = false;
         this.isPlaying = false;
         this.trail = null;
         this.gameResult = playerGameResultEnum.none;
@@ -37,12 +37,12 @@ class Player {
     init(boardPosition, direction) {
         this.gameResult = playerGameResultEnum.none;
         this.direction = directionEnum.none;
-        this.lastMovedDirection = directionEnum.none;
+        this.canChangeDirection = true;
 
         this.initTrail(boardPosition);
         this.setDirection(direction);
 
-        this.isPlaying = this.direction !== directionEnum.none;
+        this.isPlaying = true;
     }
 
     initTrail(boardPosition) {
@@ -51,30 +51,33 @@ class Player {
     }
 
     setDirection(newDirection) {
-        if (this.lastMovedDirection === newDirection) {
-            return;
-        }
+        if (this.canChangeDirection && this.direction !== newDirection) {
+            let changeDirection = false;
 
-        let changeDirection = false;
-
-        switch (newDirection) {
+            switch (newDirection) {
             case directionEnum.left:
-                changeDirection = this.lastMovedDirection !== directionEnum.right;
+                changeDirection = this.direction !== directionEnum.right;
                 break;
             case directionEnum.up:
-                changeDirection = this.lastMovedDirection !== directionEnum.down;
+                changeDirection = this.direction !== directionEnum.down;
                 break;
             case directionEnum.right:
-                changeDirection = this.lastMovedDirection !== directionEnum.left;
+                changeDirection = this.direction !== directionEnum.left;
                 break;
             case directionEnum.down:
-                changeDirection = this.lastMovedDirection !== directionEnum.up;
+                changeDirection = this.direction !== directionEnum.up;
                 break;
-        }
+            }
 
-        if (changeDirection) {
-            this.direction = newDirection;
-        }
+            if (changeDirection) {
+                this.direction = newDirection;
+                this.canChangeDirection = false;
+
+                return true;
+            }   
+        }        
+
+        return false;
     }
 
     move() {
@@ -104,7 +107,7 @@ class Player {
         let newPosition = new BoardPosition(x, y);
 
         this.trail.push(newPosition);
-        this.lastMovedDirection = this.direction;
+        this.canChangeDirection = true;
     }
 
     undoMove() {
@@ -197,7 +200,7 @@ class CollisionDetection {
 
         for (let i = 0; i < activePlayers.length; i++) {
             if (this.detectCollisionForPlayer(activePlayers[i])) {
-                collisions.push(new Collision(player));
+                collisions.push(new Collision(activePlayers[i]));
             }
         }
 
@@ -378,15 +381,13 @@ class TronLayer {
         this.playerLayers = playerLayers;
     }
 
-    draw(ctx, state) {
+    draw(ctx) {
         ctx.clearRect(0, 0, this.boardLayer.width, this.boardLayer.height);
 
         this.boardLayer.draw(ctx);
 
-        if (state === gameStateEnum.playing || state === gameStateEnum.finished) {
-            for (let i = 0; i < this.playerLayers.length; i++) {
-                this.playerLayers[i].draw(ctx);
-            }
+        for (let i = 0; i < this.playerLayers.length; i++) {
+            this.playerLayers[i].draw(ctx);
         }
     }
 }
@@ -413,15 +414,15 @@ class TronGame {
         this.invalidate();
     }
 
-    addPlayer(name, color = defaultPlayerColor) {
+    get board() {
+        return this.model.boardModel;
+    }
+
+    addPlayer(name, positionModel, color = defaultPlayerColor) {
         let model = new Player({ name: name });
         let layer = new PlayerLayer({ playerModel: model, boardLayer: this.layer.boardLayer, color: color });
-
-        // TEMP
-        let x = Math.floor(this.model.boardModel.cols / 2);
-        let y = Math.floor(this.model.boardModel.rows - 1);
-        let position = new BoardPosition(x, y);
-        model.init(position, directionEnum.up);
+       
+        model.init(new BoardPosition(positionModel.col, positionModel.row), positionModel.direction);
 
         this.model.playerModels.push(model);
         this.layer.playerLayers.push(layer);
@@ -491,7 +492,7 @@ class TronGame {
     }
 
     draw() {
-        this.layer.draw(this.ctx, this.state);
+        this.layer.draw(this.ctx);
     }
 
     invalidate() {
@@ -499,10 +500,14 @@ class TronGame {
     }
 
     setPlayerDirection(playerName, newDirection) {
-        var index = this.findPlayerIndex(playerName);
-        if (index > -1) {
-            let player = this.model.playerModels[index];
-            player.setDirection(newDirection);
+        if (this.state === gameStateEnum.playing) {
+            var index = this.findPlayerIndex(playerName);
+            if (index > -1) {
+                let player = this.model.playerModels[index];
+                return player.setDirection(newDirection);
+            }
         }
+
+        return false;
     }
 }

@@ -26,8 +26,7 @@
             <canvas id="playground"></canvas>
         </div>
         <div class="control-panel">
-            <div>
-                <button id="start-button">Start</button>
+            <div>                
                 <button id="find-game-button">Find Game</button>
             </div>
         </div>
@@ -40,8 +39,7 @@
     <script>
         "use strict";
 
-        const playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);
-        let player = null;
+        const playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);        
         let game = null;        
         let commClient = null;
 
@@ -53,18 +51,21 @@
             game = new TronGame(canvas);
 
             commClient = new SignalRClient();
-            commClient.connect();
+            commClient.gameStarted = gameStarted;
+            commClient.playerDirectionChanged = playerDirectionChanged;
+            commClient.connect();            
 
-            attachToEvent("start-button", 'click', (e) => startPauseGame(e));
-            attachToEvent("find-game-button", 'click', () => findGame());                       
+            attachToEvent("find-game-button", 'click', (e) => findGame(e));                       
 
             window.removeEventListener('load', onWindowLoaded);
         }
 
         window.addEventListener('load', onWindowLoaded);
 
-        function findGame() {
-            commClient.findGame(playerName);
+        function findGame(e) {
+            e.target.disabled = true;
+            let playerBoard = { rows: game.board.rows, cols: game.board.cols };
+            commClient.findGame(playerName, playerBoard);
         }
 
         function attachToEvent(id, event, func) {
@@ -72,24 +73,28 @@
             elem.addEventListener(event, func);
         }
 
-        function startPauseGame(e) {
-            const startButton = e.target;
+        function gameFinished(model) {
+            document.removeEventListener("keydown", keyDown);
 
-            if (game.state !== gameStateEnum.playing) {
-                document.addEventListener("keydown", keyDown);
-                
-                player = game.addPlayer(playerName);
-                game.start();
+            game.removePlayer(player.name);
+            game.stop();
+        }
 
-                startButton.innerText = "Stop";
-            } else {
-                document.removeEventListener("keydown", keyDown);
+        function gameStarted(model) {            
+            document.addEventListener("keydown", keyDown);
 
-                game.removePlayer(player.name);
-                game.stop();
+            game.addPlayer(playerName, model.position);
 
-                startButton.innerText = "Start";
+            for (let i = 0; i < model.enemies.length; i++) {
+                let enemy = model.enemies[i];
+                game.addPlayer(enemy.name, enemy.position, defaultEnemyColor);    
             }
+
+            game.start();            
+        }
+
+        function playerDirectionChanged(model) {
+            game.setPlayerDirection(model.playerName, model.direction);
         }
 
         function keyDown(evt) {
@@ -110,7 +115,11 @@
                     break;
             }
 
-            game.setPlayerDirection(player.name, direction);
+            let directionChanged = game.setPlayerDirection(playerName, direction);
+
+            if (directionChanged) {
+                commClient.directionChanged(direction);
+            }
         }
     </script>
 </body>

@@ -12,15 +12,16 @@ class SignalRClient {
             .withUrl(this.hubUrl)
             .build();
 
+        this.playerDirectionChanged = () => { };
         this.connection.on("playerDirectionChanged",
-            data => {
-
+            model => {
+                this.playerDirectionChanged(model);
             });
 
-
-        this.connection.on("gameStateChanged",
-            data => {
-
+        this.gameStarted = () => {};
+        this.connection.on("gameStarted",
+            model => {
+                this.gameStarted(model);
             });
 
         this.connection.onclose(async () => {
@@ -44,13 +45,14 @@ class SignalRClient {
             await this.connection.stop();
             console.log('disconnected');
         } catch (err) {
-            console.log(err);            
+            console.log(err);
         }
     }
 
-    async findGame(playerName) {
+    async findGame(playerName, playerBoard) {
         try {
-            let result = await this.connection.invoke("FindGame", { playerName });
+            let model = { playerName: playerName, playerBoard: playerBoard };
+            let result = await this.connection.invoke("FindGame", model);
         } catch (err) {
             console.log(err);
         }

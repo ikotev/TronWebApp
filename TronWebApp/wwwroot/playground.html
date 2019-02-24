@@ -40,22 +40,21 @@
         "use strict";
 
         const playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);        
-        let game = null;        
-        let commClient = null;
+        let game = null;
+        let findGameButton = null;
 
         function onWindowLoaded() {
             const canvas = document.getElementById('playground');
             canvas.width = defaultBoardWidth;
-            canvas.height = defaultBoardHeight;
+            canvas.height = defaultBoardHeight;            
 
-            game = new TronGame(canvas);
+            let commClient = new SignalRClient();
+            game = new TronGame(canvas, commClient);
+            game.onGameStarted = onGameStarted;            
+            game.onGameFinished = onGameFinished;
 
-            commClient = new SignalRClient();
-            commClient.gameStarted = gameStarted;
-            commClient.playerDirectionChanged = playerDirectionChanged;
-            commClient.connect();            
-
-            attachToEvent("find-game-button", 'click', (e) => findGame(e));                       
+            findGameButton = document.getElementById("find-game-button");
+            findGameButton.addEventListener('click', findGame);
 
             window.removeEventListener('load', onWindowLoaded);
         }
@@ -63,40 +62,20 @@
         window.addEventListener('load', onWindowLoaded);
 
         function findGame(e) {
-            e.target.disabled = true;
-            let playerBoard = { rows: game.board.rows, cols: game.board.cols };
-            commClient.findGame(playerName, playerBoard);
-        }
+            findGameButton.disabled = true;
+            
+            game.findGame(playerName);
+        }        
 
-        function attachToEvent(id, event, func) {
-            const elem = document.getElementById(id);
-            elem.addEventListener(event, func);
-        }
-
-        function gameFinished(model) {
+        function onGameFinished(model) {
             document.removeEventListener("keydown", keyDown);
-
-            game.removePlayer(player.name);
-            game.stop();
+            findGameButton.disabled = false;
         }
 
-        function gameStarted(model) {            
-            document.addEventListener("keydown", keyDown);
-
-            game.addPlayer(playerName, model.position);
-
-            for (let i = 0; i < model.enemies.length; i++) {
-                let enemy = model.enemies[i];
-                game.addPlayer(enemy.name, enemy.position, defaultEnemyColor);    
-            }
-
-            game.start();            
+        function onGameStarted(model) {            
+            document.addEventListener("keydown", keyDown);            
         }
-
-        function playerDirectionChanged(model) {
-            game.setPlayerDirection(model.playerName, model.direction);
-        }
-
+        
         function keyDown(evt) {
             let direction = directionEnum.none;
 
@@ -115,11 +94,7 @@
                     break;
             }
 
-            let directionChanged = game.setPlayerDirection(playerName, direction);
-
-            if (directionChanged) {
-                commClient.directionChanged(direction);
-            }
+            game.setDirection(direction);            
         }
     </script>
 </body>

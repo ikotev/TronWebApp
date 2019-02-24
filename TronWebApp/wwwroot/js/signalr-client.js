@@ -12,16 +12,22 @@ class SignalRClient {
             .withUrl(this.hubUrl)
             .build();
 
-        this.playerDirectionChanged = () => { };
+        this.onPlayerDirectionChanged = () => { };
         this.connection.on("playerDirectionChanged",
             model => {
-                this.playerDirectionChanged(model);
+                this.onPlayerDirectionChanged(model);
             });
 
-        this.gameStarted = () => {};
+        this.onGameStarted = () => {};
         this.connection.on("gameStarted",
             model => {
-                this.gameStarted(model);
+                this.onGameStarted(model);
+            });
+
+        this.onGameFinished = () => { };
+        this.connection.on("gameFinished",
+            model => {
+                this.onGameFinished(model);
             });
 
         this.connection.onclose(async () => {

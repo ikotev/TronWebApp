@@ -56,18 +56,18 @@ class Player {
             let changeDirection = false;
 
             switch (newDirection) {
-            case directionEnum.left:
-                changeDirection = this.direction !== directionEnum.right;
-                break;
-            case directionEnum.up:
-                changeDirection = this.direction !== directionEnum.down;
-                break;
-            case directionEnum.right:
-                changeDirection = this.direction !== directionEnum.left;
-                break;
-            case directionEnum.down:
-                changeDirection = this.direction !== directionEnum.up;
-                break;
+                case directionEnum.left:
+                    changeDirection = this.direction !== directionEnum.right;
+                    break;
+                case directionEnum.up:
+                    changeDirection = this.direction !== directionEnum.down;
+                    break;
+                case directionEnum.right:
+                    changeDirection = this.direction !== directionEnum.left;
+                    break;
+                case directionEnum.down:
+                    changeDirection = this.direction !== directionEnum.up;
+                    break;
             }
 
             if (changeDirection) {
@@ -75,8 +75,8 @@ class Player {
                 this.canChangeDirection = false;
 
                 return true;
-            }   
-        }        
+            }
+        }
 
         return false;
     }
@@ -145,13 +145,13 @@ class PlayerLayer {
 
         let boardLayer = this.boardLayer;
         let squareXOffset = (boardLayer.squareWidth - this.width) / 2;
-        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;        
+        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;
 
         let trail = playerModel.trail;
 
         ctx.fillStyle = this.color;
 
-        for (let i = 0; i < trail.length; i++) {                        
+        for (let i = 0; i < trail.length; i++) {
             let x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
             let y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
 
@@ -160,16 +160,16 @@ class PlayerLayer {
 
             if (!trail[i].isHorizontalMove()) {
                 x += squareXOffset;
-                width = this.width;                                
+                width = this.width;
             } else {
                 width = boardLayer.squareWidth;
             }
 
             if (!trail[i].isVerticalMove()) {
-                y += squareYOffset;                  
-                height = this.height;                
+                y += squareYOffset;
+                height = this.height;
             } else {
-                height = boardLayer.squareHeight;                
+                height = boardLayer.squareHeight;
             }
 
             ctx.fillRect(x, y, width, height);
@@ -427,9 +427,15 @@ class TronLayer {
 }
 
 class TronGame {
-    constructor(canvas) {
+    constructor(canvas, commClient) {
         this.canvas = canvas;
         this.ctx = this.canvas.getContext('2d');
+
+        this.commClient = commClient;
+        this.commClient.onGameStarted = (model) => this.gameStarted(model);
+        this.commClient.onGameFinished = (model) => this.gameFinished(model);
+        this.commClient.onPlayerDirectionChanged = (model) => this.playerDirectionChanged(model);
+        this.commClient.connect();
 
         let boardModel = new Board({});
         let boardLayer = new BoardLayer({ boardModel: boardModel, width: this.canvas.width, height: this.canvas.height });
@@ -439,23 +445,68 @@ class TronGame {
 
         this.state = gameStateEnum.none;
 
+        this.playerName = null;
+
         this.engineTimer = null;
 
         this.collisionDetection = new CollisionDetection([
             new BoardCollisionDetection(this.model.boardModel),
             new PlayerCollisionDetection(this.model.playerModels)]);
 
+        this.oGameStarted = () => { };        
+        this.onGameFinished = () => { };        
+
         this.invalidate();
     }
+    
+    gameStarted(model) {
+        this.addPlayer(this.playerName, model.position);
 
-    get board() {
-        return this.model.boardModel;
+        for (let i = 0; i < model.enemies.length; i++) {
+            let enemy = model.enemies[i];
+            this.addPlayer(enemy.name, enemy.position, defaultEnemyColor);
+        }        
+
+        this.start();
+        this.onGameStarted();
+    }
+
+    playerDirectionChanged(model) {
+        this.setPlayerDirection(model.playerName, model.direction);
+    }
+
+    gameFinished(model) {
+        this.stop();
+        for (let i = 0; i < this.model.playerModels.length; i++) {
+            let player = this.model.playerModels[i];
+            let result;
+            if (player.name === model.winnerName) {
+                result = playerGameResultEnum.winner;
+            } else {
+                result = playerGameResultEnum.loser;
+            }
+            
+            player.setGameResult(result);
+
+        }
+    }
+
+    findGame(playerName) {
+        this.playerName = playerName;
+
+        if (this.state === gameStateEnum.finished) {
+            this.removeAllPlayers();
+            this.state = gameStateEnum.none;
+        }        
+
+        let playerBoard = { rows: this.model.boardModel.rows, cols: this.model.boardModel.cols };
+        this.commClient.findGame(playerName, playerBoard);
     }
 
     addPlayer(name, positionModel, color = defaultPlayerColor) {
         let model = new Player({ name: name });
         let layer = new PlayerLayer({ playerModel: model, boardLayer: this.layer.boardLayer, color: color });
-       
+
         model.init(new BoardPosition(positionModel.col, positionModel.row), positionModel.direction);
 
         this.model.playerModels.push(model);
@@ -468,6 +519,12 @@ class TronGame {
 
     findPlayerIndex(name) {
         return this.model.playerModels.findIndex(p => p.name === name);
+    }
+
+    removeAllPlayers() {
+        this.model.playerModels.splice(0);
+        this.layer.playerLayers.splice(0);
+        this.invalidate();
     }
 
     removePlayer(name) {
@@ -504,7 +561,7 @@ class TronGame {
         let collisions = this.collisionDetection.detect(activePlayers);
 
         if (collisions.length > 0) {
-            let isDraw = collisions.length === players.length;
+            let isDraw = collisions.length === activePlayers.length;
             let gameResult = isDraw ? playerGameResultEnum.draw : playerGameResultEnum.loser;
 
             for (let i = 0; i < collisions.length; i++) {
@@ -513,12 +570,13 @@ class TronGame {
                 player.undoMove();
             }
 
-            if (!isDraw && collisions.length === players.length - 1) {
-                for (let i = 0; i < players.length; i++) {
-                    if (players[i].isPlaying) {
-                        players[i].setGameResult(playerGameResultEnum.winner);
-                    }
-                }
+            if (!isDraw && collisions.length === activePlayers.length - 1) {
+                let winner = activePlayers.find(p => p.isPlaying);
+                winner.setGameResult(playerGameResultEnum.winner);
+
+                this.stop();                
+                this.commClient.gameFinished(winner.name);
+                this.onGameFinished();
             }
         }
 
@@ -533,15 +591,21 @@ class TronGame {
         this.draw();
     }
 
+    setDirection(newDirection) {
+        this.setPlayerDirection(this.playerName, newDirection);
+    }
+
     setPlayerDirection(playerName, newDirection) {
         if (this.state === gameStateEnum.playing) {
             var index = this.findPlayerIndex(playerName);
             if (index > -1) {
                 let player = this.model.playerModels[index];
-                return player.setDirection(newDirection);
-            }
-        }
+                let directionChanged = player.setDirection(newDirection);
 
-        return false;
+                if (directionChanged) {
+                    this.commClient.directionChanged(newDirection);
+                }
+            }
+        }        
     }
 }

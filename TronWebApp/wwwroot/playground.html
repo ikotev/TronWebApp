@@ -1,0 +1,117 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Playground Example</title>
+    <style>
+        body {
+            overflow: hidden;
+        }
+        .container {
+            display: grid;
+            column-gap: 10px;
+            grid-template-columns: min-content auto;
+        }
+        #playground {
+            border: 3px solid black;
+        }
+        .control-panel {
+            background-color: lightgray
+        }
+        .playground-panel {}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="playground-panel">
+            <canvas id="playground"></canvas>
+        </div>
+        <div class="control-panel">
+            <div>
+                <button id="start-button">Start</button>
+                <button id="find-game-button">Find Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/lib/signalr.js"></script>
+    <script src="js/signalr-client.js"></script>
+    <script src="js/tron-game.js"></script>
+
+    <script>
+        "use strict";
+
+        const playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);
+        let player = null;
+        let game = null;        
+        let commClient = null;
+
+        function onWindowLoaded() {
+            const canvas = document.getElementById('playground');
+            canvas.width = defaultBoardWidth;
+            canvas.height = defaultBoardHeight;
+
+            game = new TronGame(canvas);
+
+            commClient = new SignalRClient();
+            commClient.connect();
+
+            attachToEvent("start-button", 'click', (e) => startPauseGame(e));
+            attachToEvent("find-game-button", 'click', () => findGame());                       
+
+            window.removeEventListener('load', onWindowLoaded);
+        }
+
+        window.addEventListener('load', onWindowLoaded);
+
+        function findGame() {
+            commClient.findGame(playerName);
+        }
+
+        function attachToEvent(id, event, func) {
+            const elem = document.getElementById(id);
+            elem.addEventListener(event, func);
+        }
+
+        function startPauseGame(e) {
+            const startButton = e.target;
+
+            if (game.state !== gameStateEnum.playing) {
+                document.addEventListener("keydown", keyDown);
+                
+                player = game.addPlayer(playerName);
+                game.start();
+
+                startButton.innerText = "Stop";
+            } else {
+                document.removeEventListener("keydown", keyDown);
+
+                game.removePlayer(player.name);
+                game.stop();
+
+                startButton.innerText = "Start";
+            }
+        }
+
+        function keyDown(evt) {
+            let direction = directionEnum.none;
+
+            switch (evt.code) {
+                case 'ArrowLeft':
+                    direction = directionEnum.left;
+                    break;
+                case 'ArrowUp':
+                    direction = directionEnum.up;
+                    break;
+                case 'ArrowRight':
+                    direction = directionEnum.right;
+                    break;
+                case 'ArrowDown':
+                    direction = directionEnum.down;
+                    break;
+            }
+
+            game.setPlayerDirection(player.name, direction);
+        }
+    </script>
+</body>
+</html>

@@ -28,6 +28,7 @@ class Player {
     constructor({ name }) {
         this.name = name;
         this.direction = directionEnum.none;
+        this.lastMovedDirection = directionEnum.none;
         this.isPlaying = false;
         this.trail = null;
         this.gameResult = playerGameResultEnum.none;
@@ -35,6 +36,8 @@ class Player {
 
     init(boardPosition, direction) {
         this.gameResult = playerGameResultEnum.none;
+        this.direction = directionEnum.none;
+        this.lastMovedDirection = directionEnum.none;
 
         this.initTrail(boardPosition);
         this.setDirection(direction);
@@ -48,7 +51,7 @@ class Player {
     }
 
     setDirection(newDirection) {
-        if (this.gameResult !== playerGameResultEnum.none || this.direction === newDirection) {
+        if (this.lastMovedDirection === newDirection) {
             return;
         }
 
@@ -56,16 +59,16 @@ class Player {
 
         switch (newDirection) {
             case directionEnum.left:
-                changeDirection = this.direction !== directionEnum.right;
+                changeDirection = this.lastMovedDirection !== directionEnum.right;
                 break;
             case directionEnum.up:
-                changeDirection = this.direction !== directionEnum.down;
+                changeDirection = this.lastMovedDirection !== directionEnum.down;
                 break;
             case directionEnum.right:
-                changeDirection = this.direction !== directionEnum.left;
+                changeDirection = this.lastMovedDirection !== directionEnum.left;
                 break;
             case directionEnum.down:
-                changeDirection = this.direction !== directionEnum.up;
+                changeDirection = this.lastMovedDirection !== directionEnum.up;
                 break;
         }
 
@@ -101,6 +104,7 @@ class Player {
         let newPosition = new BoardPosition(x, y);
 
         this.trail.push(newPosition);
+        this.lastMovedDirection = this.direction;
     }
 
     undoMove() {

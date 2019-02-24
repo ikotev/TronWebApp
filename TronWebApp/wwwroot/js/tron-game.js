@@ -5,7 +5,8 @@ const defaultBoardCols = 25;
 const defaultFrameSize = 3;
 const defaultGridSize = 1;
 
-const defaultPlayerSize = 20;
+const defaultPlayerWidth = 20;
+const defaultPlayerHeight = 20;
 const defaultBoardWidth = 800;
 const defaultBoardHeight = 800;
 const defaultGameSpeedInMs = 500;
@@ -121,10 +122,13 @@ class Player {
 }
 
 class PlayerLayer {
-    constructor({ playerModel, boardLayer, color, size = defaultPlayerSize }) {
+    constructor({ playerModel, boardLayer, color,
+        width = defaultPlayerWidth, height = defaultPlayerHeight }) {
+
         this.playerModel = playerModel;
         this.boardLayer = boardLayer;
-        this.size = size;
+        this.width = width;
+        this.height = height;
         this.color = color;
     }
 
@@ -140,8 +144,8 @@ class PlayerLayer {
         }
 
         let boardLayer = this.boardLayer;
-        let squareXOffset = (boardLayer.squareWidth - this.size) / 2;
-        let squareYOffset = (boardLayer.squareHeight - this.size) / 2;
+        let squareXOffset = (boardLayer.squareWidth - this.width) / 2;
+        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;
         let xOffset = boardLayer.xOffset + squareXOffset;
         let yOffset = boardLayer.yOffset + squareYOffset;
 
@@ -155,7 +159,7 @@ class PlayerLayer {
             let x = xOffset + col * boardLayer.squareWidth;
             let y = yOffset + row * boardLayer.squareHeight;
 
-            ctx.fillRect(x, y, this.size, this.size);
+            ctx.fillRect(x, y, this.width, this.height);
         }
     }
 

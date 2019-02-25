@@ -598,7 +598,11 @@ class TronGame {
     }
 
     setDirection(newDirection) {
-        this.setPlayerDirection(this.playerName, newDirection);
+        let directionChanged = this.setPlayerDirection(this.playerName, newDirection);
+
+        if (directionChanged) {
+            this.commClient.directionChanged(newDirection);
+        }
     }
 
     setPlayerDirection(playerName, newDirection) {
@@ -606,11 +610,7 @@ class TronGame {
             var index = this.findPlayerIndex(playerName);
             if (index > -1) {
                 let player = this.model.playerModels[index];
-                let directionChanged = player.setDirection(newDirection);
-
-                if (directionChanged) {
-                    //this.commClient.directionChanged(newDirection);
-                }
+                return player.setDirection(newDirection);                
             }
         }
     }

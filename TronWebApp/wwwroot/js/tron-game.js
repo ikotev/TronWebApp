@@ -5,10 +5,10 @@ const defaultBoardCols = 25;
 const defaultFrameSize = 3;
 const defaultGridSize = 1;
 
-const defaultPlayerWidth = 20;
-const defaultPlayerHeight = 20;
-const defaultBoardWidth = 800;
-const defaultBoardHeight = 800;
+const defaultPlayerWidth = 10;
+const defaultPlayerHeight = 10;
+const defaultBoardWidth = 300;
+const defaultBoardHeight = 300;
 const defaultGameSpeedInMs = 500;
 
 const defaultWinnerColor = 'green';
@@ -358,6 +358,13 @@ class BoardLayer {
         this.yOffset = this.yPadding + frameSize;
     }
 
+    resize(width, height) {
+        this.width = width;
+        this.height = height;
+
+        this.setDimensions();
+    }
+
     draw(ctx) {
         let boardModel = this.boardModel;
         const frameSize = this.isFrameVisible ? this.frameSize : 0;
@@ -413,6 +420,10 @@ class TronLayer {
     constructor({ boardLayer, playerLayers }) {
         this.boardLayer = boardLayer;
         this.playerLayers = playerLayers;
+    }
+
+    resize(width, height) {
+        this.boardLayer.resize(width, height);
     }
 
     draw(ctx) {
@@ -594,6 +605,11 @@ class TronGame {
 
     draw() {
         this.layer.draw(this.ctx);
+    }
+
+    resize(width, height) {
+        this.layer.resize(width, height);
+        this.invalidate();
     }
 
     invalidate() {

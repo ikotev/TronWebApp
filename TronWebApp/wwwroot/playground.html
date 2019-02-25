@@ -5,47 +5,38 @@
     <style>
         body {
             overflow: hidden;
-        }
-
-        .container {
-            display: grid;
-            column-gap: 10px;
-            grid-template-columns: min-content auto;
+            margin: 0;
         }
 
         #playground {
             border: 3px solid black;
         }
-
-        .control-panel {
-            background-color: lightgray;
-            padding: 10px;
-        }
-
-        .playground-panel {
-            
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="playground-panel">
-            <canvas id="playground"></canvas>
-        </div>
-        <div class="control-panel">
-            <p>
-                <b>Controls:</b>
-                <ul>
-                    <li>Left: <span>&#8592;</span>, A</li>
-                    <li>Right: <span>&#8594;</span>, D</li>
-                    <li>Up: <span>&#8593;</span>, W</li>
-                    <li>Down: <span>&#8595;</span>, S</li>
-                </ul>
-            </p>
+    <table>
+        <tr>
+            <td>
+                <canvas id="playground"></canvas>
+            </td>
+            <td style="width: 300px; height: 100px; background-color: lightgray; padding: 10px;">
+                <div>
+                    <p>
+                        <b>Controls:</b>
+                        <ul>
+                            <li>Left: <span>&#8592;</span>, A</li>
+                            <li>Right: <span>&#8594;</span>, D</li>
+                            <li>Up: <span>&#8593;</span>, W</li>
+                            <li>Down: <span>&#8595;</span>, S</li>
+                        </ul>
+                    </p>
 
-            <button id="find-game-button">Find Game</button>
-        </div>
-    </div>
+                    <button id="find-game-button">Find Game</button>
+                </div>
+            </td>
+        </tr>
+    </table>
+
 
     <script src="js/lib/signalr.js"></script>
     <script src="js/signalr-client.js"></script>
@@ -56,9 +47,10 @@
 
         let game = null;
         let findGameButton = null;
+        let canvas = null;
 
         function onWindowLoaded() {
-            const canvas = document.getElementById('playground');
+            canvas = document.getElementById('playground');
             canvas.width = defaultBoardWidth;
             canvas.height = defaultBoardHeight;
 
@@ -70,10 +62,33 @@
             findGameButton = document.getElementById("find-game-button");
             findGameButton.addEventListener('click', findGame);
 
+            window.addEventListener('resize', onWindowResized);
+
             window.removeEventListener('load', onWindowLoaded);
+
+            onWindowResized();
         }
 
         window.addEventListener('load', onWindowLoaded);
+
+        function onWindowResized() {
+            if (playgroundResized(canvas)) {
+                game.resize(canvas.width, canvas.height);
+            }
+        }
+        function playgroundResized(canvas) {
+            let width = document.body.clientWidth - 300;
+            let height = document.body.clientHeight -10;
+
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+
+                return true;
+            }
+
+            return false;
+        }
 
         function findGame(e) {
             findGameButton.disabled = true;

@@ -486,6 +486,7 @@ class TronGame {
 
     gameFinished(model) {
         this.stop();
+
         for (let i = 0; i < this.model.playerModels.length; i++) {
             let player = this.model.playerModels[i];
             let result;
@@ -497,6 +498,8 @@ class TronGame {
 
             player.setGameResult(result);
         }
+
+        this.invalidate();
     }
 
     findGame() {

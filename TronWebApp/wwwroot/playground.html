@@ -6,18 +6,25 @@
         body {
             overflow: hidden;
         }
+
         .container {
             display: grid;
             column-gap: 10px;
             grid-template-columns: min-content auto;
         }
+
         #playground {
             border: 3px solid black;
         }
+
         .control-panel {
-            background-color: lightgray
+            background-color: lightgray;
+            padding: 10px;
         }
-        .playground-panel {}
+
+        .playground-panel {
+            
+        }
     </style>
 </head>
 <body>
@@ -26,9 +33,17 @@
             <canvas id="playground"></canvas>
         </div>
         <div class="control-panel">
-            <div>                
-                <button id="find-game-button">Find Game</button>
-            </div>
+            <p>
+                <b>Controls:</b>
+                <ul>
+                    <li>Left: <span>&#8592;</span>, A</li>
+                    <li>Right: <span>&#8594;</span>, D</li>
+                    <li>Up: <span>&#8593;</span>, W</li>
+                    <li>Down: <span>&#8595;</span>, S</li>
+                </ul>
+            </p>
+
+            <button id="find-game-button">Find Game</button>
         </div>
     </div>
 
@@ -38,18 +53,18 @@
 
     <script>
         "use strict";
-        
+
         let game = null;
         let findGameButton = null;
 
         function onWindowLoaded() {
             const canvas = document.getElementById('playground');
             canvas.width = defaultBoardWidth;
-            canvas.height = defaultBoardHeight;            
+            canvas.height = defaultBoardHeight;
 
             let commClient = new SignalRClient();
             game = new TronGame(canvas, commClient);
-            game.onGameStarted = onGameStarted;            
+            game.onGameStarted = onGameStarted;
             game.onGameFinished = onGameFinished;
 
             findGameButton = document.getElementById("find-game-button");
@@ -62,38 +77,42 @@
 
         function findGame(e) {
             findGameButton.disabled = true;
-            
+
             game.findGame();
-        }        
+        }
 
         function onGameFinished(model) {
             document.removeEventListener("keydown", keyDown);
             findGameButton.disabled = false;
         }
 
-        function onGameStarted(model) {            
-            document.addEventListener("keydown", keyDown);            
+        function onGameStarted(model) {
+            document.addEventListener("keydown", keyDown);
         }
-        
+
         function keyDown(evt) {
             let direction = directionEnum.none;
-
+            console.log(evt.code);
             switch (evt.code) {
                 case 'ArrowLeft':
+                case 'KeyA':
                     direction = directionEnum.left;
                     break;
                 case 'ArrowUp':
+                case 'KeyW':
                     direction = directionEnum.up;
                     break;
                 case 'ArrowRight':
+                case 'KeyD':
                     direction = directionEnum.right;
                     break;
                 case 'ArrowDown':
+                case 'KeyS':
                     direction = directionEnum.down;
                     break;
             }
 
-            game.setDirection(direction);            
+            game.setDirection(direction);
         }
     </script>
 </body>

@@ -427,7 +427,7 @@ class TronLayer {
 }
 
 class TronGame {
-    constructor(canvas, commClient) {
+    constructor(canvas, commClient, playerName = '') {
         this.canvas = canvas;
         this.ctx = this.canvas.getContext('2d');
 
@@ -445,7 +445,10 @@ class TronGame {
 
         this.state = gameStateEnum.none;
 
-        this.playerName = null;
+        if (!playerName) {
+            playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);
+        }
+        this.playerName = playerName;
 
         this.engineTimer = null;
 
@@ -453,19 +456,25 @@ class TronGame {
             new BoardCollisionDetection(this.model.boardModel),
             new PlayerCollisionDetection(this.model.playerModels)]);
 
-        this.oGameStarted = () => { };        
-        this.onGameFinished = () => { };        
+        this.oGameStarted = () => { };
+        this.onGameFinished = () => { };
 
         this.invalidate();
     }
-    
-    gameStarted(model) {
-        this.addPlayer(this.playerName, model.position);
 
-        for (let i = 0; i < model.enemies.length; i++) {
-            let enemy = model.enemies[i];
-            this.addPlayer(enemy.name, enemy.position, defaultEnemyColor);
-        }        
+    gameStarted(model) {
+        for (let i = 0; i < model.players.length; i++) {
+            let player = model.players[i];
+
+            let playerColor;
+            if (player.name === this.playerName) {
+                playerColor = defaultPlayerColor;
+            } else {
+                playerColor = defaultEnemyColor;
+            }
+
+            this.addPlayer(player.name, player.position, playerColor);
+        }
 
         this.start();
         this.onGameStarted();
@@ -485,22 +494,19 @@ class TronGame {
             } else {
                 result = playerGameResultEnum.loser;
             }
-            
-            player.setGameResult(result);
 
+            player.setGameResult(result);
         }
     }
 
-    findGame(playerName) {
-        this.playerName = playerName;
-
+    findGame() {
         if (this.state === gameStateEnum.finished) {
             this.removeAllPlayers();
             this.state = gameStateEnum.none;
-        }        
+        }
 
         let playerBoard = { rows: this.model.boardModel.rows, cols: this.model.boardModel.cols };
-        this.commClient.findGame(playerName, playerBoard);
+        this.commClient.findGame(this.playerName, playerBoard);
     }
 
     addPlayer(name, positionModel, color = defaultPlayerColor) {
@@ -574,7 +580,7 @@ class TronGame {
                 let winner = activePlayers.find(p => p.isPlaying);
                 winner.setGameResult(playerGameResultEnum.winner);
 
-                this.stop();                
+                this.stop();
                 this.commClient.gameFinished(winner.name);
                 this.onGameFinished();
             }
@@ -603,9 +609,9 @@ class TronGame {
                 let directionChanged = player.setDirection(newDirection);
 
                 if (directionChanged) {
-                    this.commClient.directionChanged(newDirection);
+                    //this.commClient.directionChanged(newDirection);
                 }
             }
-        }        
+        }
     }
 }

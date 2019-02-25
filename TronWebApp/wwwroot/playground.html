@@ -38,8 +38,7 @@
 
     <script>
         "use strict";
-
-        const playerName = 'Player.' + Math.floor(Math.random() * (9999 - 1000) + 1000);        
+        
         let game = null;
         let findGameButton = null;
 
@@ -64,7 +63,7 @@
         function findGame(e) {
             findGameButton.disabled = true;
             
-            game.findGame(playerName);
+            game.findGame();
         }        
 
         function onGameFinished(model) {

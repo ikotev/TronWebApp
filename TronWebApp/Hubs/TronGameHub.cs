@@ -126,31 +126,19 @@ namespace TronWebApp.Hubs
             var positions = _playerSpawnService.GetPosition(players.Count, game.Board);
             var positionDtos = positions.ToDtos();
 
-            for (int i = 0; i < players.Count; i++)
+            var playerDtos = players.Zip(positionDtos, (player, position) => new PlayerDto
+                {
+                    Name = player.Name,
+                    Position = position
+                })
+                .ToList();
+
+            var dto = new GameStartedDto
             {
-                var position = positionDtos[i];
-                var dto = new GameStartedDto
-                {
-                    Position = position,
-                    Enemies = new List<EnemyPlayerDto>()
-                };
+                Players = playerDtos
+            };
 
-                for (int j = 0; j < players.Count; j++)
-                {
-                    if (i == j)
-                    {
-                        continue;
-                    }
-
-                    dto.Enemies.Add(new EnemyPlayerDto
-                    {
-                        Name = players[j].Name,
-                        Position = positionDtos[j]
-                    });
-
-                    await Clients.Client(players[i].ConnectionId).GameStarted(dto);
-                }
-            }
+            await Clients.Group(game.GroupName).GameStarted(dto);
         }
 
         private async Task<TronGame> CreateNewGame(List<TronPlayer> players, GameBoard board)

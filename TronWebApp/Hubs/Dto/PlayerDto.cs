@@ -1,6 +1,6 @@
 ﻿namespace TronWebApp.Hubs
 {
-    public class EnemyPlayerDto
+    public class PlayerDto
     {
         public string Name { get; set; }
 

@@ -443,9 +443,9 @@ class TronGame {
         this.ctx = this.canvas.getContext('2d');
 
         this.commClient = commClient;
-        this.commClient.onGameStarted = (model) => this.gameStarted(model);
-        this.commClient.onGameFinished = (model) => this.gameFinished(model);
-        this.commClient.onPlayerDirectionChanged = (model) => this.playerDirectionChanged(model);
+        this.commClient.onReceiveStartGame = (model) => this.startGame(model);
+        this.commClient.onReceiveGameFinished = (model) => this.finishGame(model);
+        this.commClient.onReceivePlayerDirectionChanged = (model) => this.changePlayerDirection(model);
         this.commClient.connect();
 
         let boardModel = new Board({});
@@ -467,13 +467,13 @@ class TronGame {
             new BoardCollisionDetection(this.model.boardModel),
             new PlayerCollisionDetection(this.model.playerModels)]);
 
-        this.oGameStarted = () => { };
+        this.onGameStarted = () => { };
         this.onGameFinished = () => { };
 
         this.invalidate();
     }
 
-    gameStarted(model) {
+    startGame(model) {
         for (let i = 0; i < model.players.length; i++) {
             let player = model.players[i];
 
@@ -491,11 +491,11 @@ class TronGame {
         this.onGameStarted();
     }
 
-    playerDirectionChanged(model) {
+    changePlayerDirection(model) {
         this.setPlayerDirection(model.playerName, model.direction);
     }
 
-    gameFinished(model) {
+    finishGame(model) {
         this.stop();
 
         for (let i = 0; i < this.model.playerModels.length; i++) {
@@ -508,9 +508,7 @@ class TronGame {
             }
 
             player.setGameResult(result);
-        }
-
-        this.invalidate();
+        }                    
     }
 
     findGame() {
@@ -568,9 +566,11 @@ class TronGame {
 
         this.state = gameStateEnum.finished;
         this.invalidate();
+
+        this.onGameFinished();
     }
 
-    engine() {
+    engine() {        
         let players = this.model.playerModels;
         let activePlayers = players.filter(p => p.isPlaying);
 
@@ -578,6 +578,23 @@ class TronGame {
             activePlayers[i].move();
         }
 
+        let collisions = this.detectCollisions(activePlayers);
+        let winner = null;
+
+        if (collisions.length === activePlayers.length - 1) {
+            winner = activePlayers.find(p => p.isPlaying);
+            winner.setGameResult(playerGameResultEnum.winner);            
+        }  
+
+        this.invalidate();
+
+        if (winner !== null) {
+            this.stop();
+            this.commClient.finishGame(winner.name);        
+        }
+    }
+
+    detectCollisions(activePlayers) {
         let collisions = this.collisionDetection.detect(activePlayers);
 
         if (collisions.length > 0) {
@@ -588,19 +605,10 @@ class TronGame {
                 let player = collisions[i].player;
                 player.setGameResult(gameResult);
                 player.undoMove();
-            }
-
-            if (!isDraw && collisions.length === activePlayers.length - 1) {
-                let winner = activePlayers.find(p => p.isPlaying);
-                winner.setGameResult(playerGameResultEnum.winner);
-
-                this.stop();
-                this.commClient.gameFinished(winner.name);
-                this.onGameFinished();
-            }
+            }            
         }
 
-        this.invalidate();
+        return collisions;
     }
 
     draw() {
@@ -616,11 +624,11 @@ class TronGame {
         this.draw();
     }
 
-    setDirection(newDirection) {
+    changeDirection(newDirection) {
         let directionChanged = this.setPlayerDirection(this.playerName, newDirection);
 
         if (directionChanged) {
-            this.commClient.directionChanged(newDirection);
+            this.commClient.playerDirectionChanged(newDirection);
         }
     }
 

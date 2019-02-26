@@ -12,22 +12,22 @@ class SignalRClient {
             .withUrl(this.hubUrl)
             .build();
 
-        this.onPlayerDirectionChanged = () => { };
-        this.connection.on("playerDirectionChanged",
+        this.onReceivePlayerDirectionChanged = () => { };
+        this.connection.on("receivePlayerDirectionChanged",
             model => {
-                this.onPlayerDirectionChanged(model);
+                this.onReceivePlayerDirectionChanged(model);
             });
 
-        this.onGameStarted = () => {};
-        this.connection.on("gameStarted",
+        this.onReceiveStartGame = () => {};
+        this.connection.on("receiveStartGame",
             model => {
-                this.onGameStarted(model);
+                this.onReceiveStartGame(model);
             });
 
-        this.onGameFinished = () => { };
-        this.connection.on("gameFinished",
+        this.onReceiveGameFinished = () => { };
+        this.connection.on("receiveGameFinished",
             model => {
-                this.onGameFinished(model);
+                this.onReceiveGameFinished(model);
             });
 
         this.connection.onclose(async () => {
@@ -64,17 +64,17 @@ class SignalRClient {
         }
     }
 
-    async directionChanged(direction) {
+    async playerDirectionChanged(direction) {
         try {
-            let result = await this.connection.invoke("DirectionChanged", { direction });
+            let result = await this.connection.invoke("PlayerDirectionChanged", { direction });
         } catch (err) {
             console.log(err);
         }
     }
 
-    async gameFinished(winnerName) {
+    async finishGame(winnerName) {
         try {
-            let result = await this.connection.invoke("GameFinished", { winnerName });
+            let result = await this.connection.invoke("FinishGame", { winnerName });
         } catch (err) {
             console.log(err);
         }

@@ -4,10 +4,10 @@ namespace TronWebApp.Hubs
 {
     public interface ITronGameClient
     {
-        Task PlayerDirectionChanged(PlayerDirectionChangedDto dto);
+        Task ReceivePlayerDirectionChanged(PlayerDirectionChangedDto dto);
 
-        Task GameFinished(GameFinishedDto dto);
+        Task ReceiveGameFinished(GameFinishedDto dto);
 
-        Task GameStarted(GameStartedDto dto);
+        Task ReceiveStartGame(GameStartedDto dto);
     }
 }

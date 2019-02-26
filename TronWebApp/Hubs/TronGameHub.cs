@@ -59,7 +59,7 @@ namespace TronWebApp.Hubs
             }
         }
 
-        public async Task DirectionChanged(DirectionChangedDto dto)
+        public async Task PlayerDirectionChanged(DirectionChangedDto dto)
         {
             if (dto == null || !Enum.IsDefined(typeof(PlayerDirection), dto.Direction))
             {
@@ -79,7 +79,7 @@ namespace TronWebApp.Hubs
                 var playerName = game.Players.First(p => p.ConnectionId == connectionId).Name;
 
                 await Clients.GroupExcept(game.GroupName, connectionId)
-                    .PlayerDirectionChanged(new PlayerDirectionChangedDto
+                    .ReceivePlayerDirectionChanged(new PlayerDirectionChangedDto
                     {
                         Direction = dto.Direction,
                         PlayerName = playerName
@@ -87,7 +87,7 @@ namespace TronWebApp.Hubs
             }
         }
 
-        public async Task GameFinished(GameFinishedDto dto)
+        public async Task FinishGame(GameFinishedDto dto)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.WinnerName))
             {
@@ -111,7 +111,7 @@ namespace TronWebApp.Hubs
             if (game != null)
             {
                 await Clients.GroupExcept(game.GroupName, connectionId)
-                    .GameFinished(dto);
+                    .ReceiveGameFinished(dto);
 
                 foreach (var player in game.Players)
                 {
@@ -138,7 +138,7 @@ namespace TronWebApp.Hubs
                 Players = playerDtos
             };
 
-            await Clients.Group(game.GroupName).GameStarted(dto);
+            await Clients.Group(game.GroupName).ReceiveStartGame(dto);
         }
 
         private async Task<TronGame> CreateNewGame(List<TronPlayer> players, GameBoard board)

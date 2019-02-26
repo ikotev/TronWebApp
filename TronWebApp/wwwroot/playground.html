@@ -107,7 +107,7 @@
 
         function keyDown(evt) {
             let direction = directionEnum.none;
-            console.log(evt.code);
+            
             switch (evt.code) {
                 case 'ArrowLeft':
                 case 'KeyA':
@@ -127,7 +127,7 @@
                     break;
             }
 
-            game.setDirection(direction);
+            game.changeDirection(direction);
         }
     </script>
 </body>

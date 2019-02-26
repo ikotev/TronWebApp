@@ -12,7 +12,7 @@ const defaultBoardHeight = 300;
 const defaultGameSpeedInMs = 500;
 
 const defaultWinnerColor = 'green';
-const defaultLoserColor = 'red';
+const defaultLoserColor = 'orange';
 const defaultDrawColor = 'yellow';
 
 const defaultPlayerColor = 'black';
@@ -137,6 +137,12 @@ class PlayerLayer {
     setDimensions() {
         this.width = this.widthRatio * this.boardLayer.squareWidth;
         this.height = this.heightRatio * this.boardLayer.squareHeight;
+
+        this.headRadius = Math.min(this.width, this.height) / 2;
+        this.headXOffset = this.boardLayer.squareWidth / 2;
+        this.headYOffset = this.boardLayer.squareHeight / 2;
+        this.squareXOffset = (this.boardLayer.squareWidth - this.width) / 2;
+        this.squareYOffset = (this.boardLayer.squareHeight - this.height) / 2;
     }
 
     resize() {        
@@ -155,36 +161,63 @@ class PlayerLayer {
         }
 
         let boardLayer = this.boardLayer;
-        let squareXOffset = (boardLayer.squareWidth - this.width) / 2;
-        let squareYOffset = (boardLayer.squareHeight - this.height) / 2;
-
         let trail = playerModel.trail;
+        let n = trail.length - 1;
+        let previous = trail[n];
 
         ctx.fillStyle = this.color;
-
-        for (let i = 0; i < trail.length; i++) {
+        
+        for (let i = n; i >= 0; i--) {  
             let x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
             let y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
 
-            let width;
-            let height;
-
-            if (!trail[i].isHorizontalMove()) {
-                x += squareXOffset;
-                width = this.width;
-            } else {
-                width = boardLayer.squareWidth;
+            if (i === n) {
+                this.drawHead(ctx, x , y);                
+            } else {                
+                if (previous.isHorizontalMove() !== trail[i].isHorizontalMove()) {
+                    this.drawJoint(ctx, x, y);
+                } else {
+                    this.drawContinuation(ctx, trail[i], x, y);
+                }                
             }
 
-            if (!trail[i].isVerticalMove()) {
-                y += squareYOffset;
-                height = this.height;
-            } else {
-                height = boardLayer.squareHeight;
-            }
-
-            ctx.fillRect(x, y, width, height);
+            previous = trail[i];
         }
+    }    
+
+    drawContinuation(ctx, trailPart, x, y) {
+        let width;
+        let height;
+        let boardLayer = this.boardLayer;        
+
+        if (!trailPart.isHorizontalMove()) {
+            x += this.squareXOffset;
+            width = this.width;
+        } else {
+            width = boardLayer.squareWidth;
+        }
+
+        if (!trailPart.isVerticalMove()) {
+            y += this.squareYOffset;
+            height = this.height;
+        } else {
+            height = boardLayer.squareHeight;
+        }
+
+        ctx.fillRect(x, y, width, height);
+    }
+
+    drawJoint(ctx,x, y) {
+        let boardLayer = this.boardLayer;
+
+        ctx.fillRect(x, y, boardLayer.squareWidth, boardLayer.squareHeight);
+    }
+
+    drawHead(ctx, x, y) {
+        ctx.beginPath();
+        ctx.arc(x + this.headXOffset, y + this.headYOffset, this.headRadius, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.fill();
     }
 
     drawGameResult(ctx) {

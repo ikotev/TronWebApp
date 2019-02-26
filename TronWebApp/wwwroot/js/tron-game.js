@@ -508,7 +508,9 @@ class TronGame {
             }
 
             player.setGameResult(result);
-        }                    
+        }
+
+        this.invalidate();
     }
 
     findGame() {

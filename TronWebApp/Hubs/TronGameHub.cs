@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.SignalR;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Microsoft.AspNetCore.SignalR;
 
 namespace TronWebApp.Hubs
 {
@@ -29,31 +29,22 @@ namespace TronWebApp.Hubs
                 dto.PlayerBoard.Rows <= 0 || dto.PlayerBoard.Cols <= 0)
             {
                 throw new ArgumentException(nameof(FindGameDto));
-            }
-
-            var tronPlayer = new TronPlayer
+            }            
+            
+            var request = new GameLobbyRequest
             {
-                Name = dto.PlayerName,
-                ConnectionId = Context.ConnectionId
-            };
-
-            var board = dto.PlayerBoard.ToModel();
-
-            var pendingGame = _playersMatchmakingService.TryFind(new PendingGame
-            {
-                PlayerBoard = board,
-                Player = tronPlayer
-            });
-
-            if (pendingGame != null)
-            {
-                var players = new List<TronPlayer>
+                PlayerBoard = dto.PlayerBoard.ToModel(),
+                Player = new TronPlayer
                 {
-                    tronPlayer,
-                    pendingGame.Player
-                };
+                    Name = dto.PlayerName,
+                    ConnectionId = Context.ConnectionId
+                }
+            };
+            var gameLobby = _playersMatchmakingService.TryFind(request);
 
-                var game = await CreateNewGame(players, board);
+            if (gameLobby != null)
+            {               
+                var game = await CreateNewGame(gameLobby);
 
                 await StartGame(game);
             }
@@ -127,11 +118,10 @@ namespace TronWebApp.Hubs
             var positionDtos = positions.ToDtos();
 
             var playerDtos = players.Zip(positionDtos, (player, position) => new PlayerDto
-                {
-                    Name = player.Name,
-                    Position = position
-                })
-                .ToList();
+            {
+                Name = player.Name,
+                Position = position
+            });
 
             var dto = new GameStartedDto
             {
@@ -141,7 +131,7 @@ namespace TronWebApp.Hubs
             await Clients.Group(game.GroupName).ReceiveStartGame(dto);
         }
 
-        private async Task<TronGame> CreateNewGame(List<TronPlayer> players, GameBoard board)
+        private async Task<TronGame> CreateNewGame(GameLobby gameLobby)
         {
             var groupName = Guid.NewGuid().ToString();
 
@@ -150,8 +140,8 @@ namespace TronWebApp.Hubs
                 GroupName = groupName,
                 State = GameState.Playing,
                 TimeCreated = DateTime.UtcNow,
-                Players = players,
-                Board = board
+                Players = gameLobby.Players,
+                Board = gameLobby.Board
             };
 
             lock (PlayerGameMapLock)
@@ -162,7 +152,7 @@ namespace TronWebApp.Hubs
                 }
             }
 
-            foreach (var player in players)
+            foreach (var player in gameLobby.Players)
             {
                 await Groups.AddToGroupAsync(player.ConnectionId, groupName);
             }

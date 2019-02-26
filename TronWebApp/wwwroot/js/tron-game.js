@@ -5,8 +5,8 @@ const defaultBoardCols = 25;
 const defaultFrameSize = 3;
 const defaultGridSize = 1;
 
-const defaultPlayerWidth = 10;
-const defaultPlayerHeight = 10;
+const defaultPlayerWidthRatio = 0.7;
+const defaultPlayerHeightRatio = 0.7;
 const defaultBoardWidth = 300;
 const defaultBoardHeight = 300;
 const defaultGameSpeedInMs = 500;
@@ -123,13 +123,24 @@ class Player {
 
 class PlayerLayer {
     constructor({ playerModel, boardLayer, color,
-        width = defaultPlayerWidth, height = defaultPlayerHeight }) {
+        widthRatio = defaultPlayerWidthRatio, heightRatio = defaultPlayerHeightRatio }) {
 
         this.playerModel = playerModel;
         this.boardLayer = boardLayer;
-        this.width = width;
-        this.height = height;
+        this.widthRatio = widthRatio;
+        this.heightRatio = heightRatio;        
         this.color = color;
+
+        this.setDimensions();
+    }
+
+    setDimensions() {
+        this.width = this.widthRatio * this.boardLayer.squareWidth;
+        this.height = this.heightRatio * this.boardLayer.squareHeight;
+    }
+
+    resize() {        
+        this.setDimensions();
     }
 
     draw(ctx) {
@@ -424,6 +435,10 @@ class TronLayer {
 
     resize(width, height) {
         this.boardLayer.resize(width, height);
+
+        for (let i = 0; i < this.playerLayers.length; i++) {
+            this.playerLayers[i].resize();
+        }
     }
 
     draw(ctx) {
@@ -511,6 +526,10 @@ class TronGame {
         }
 
         this.invalidate();
+    }
+
+    forfeitGame() {
+
     }
 
     findGame() {
@@ -642,5 +661,7 @@ class TronGame {
                 return player.setDirection(newDirection);                
             }
         }
+
+        return false;
     }
 }

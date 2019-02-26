@@ -1,33 +1,45 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace TronWebApp.Hubs
 {
     public class PlayerMatchmakingService
     {
-        private static readonly List<PendingGame> PendingGames = new List<PendingGame>();
-        private static readonly object PendingGamesLock = new object();
+        private static readonly List<GameLobby> GameLobbies = new List<GameLobby>();
+        private static readonly object GameLobbiesLock = new object();
 
-        public PendingGame TryFind(PendingGame game)
+        public GameLobby TryFind(GameLobbyRequest request)
         {
-            PendingGame pendingGame = null;
+            GameLobby lobby = null;
 
-            lock (PendingGamesLock)
-            {                
-                var index = PendingGames.FindIndex(p => p.PlayerBoard.Cols == game.PlayerBoard.Cols && p.PlayerBoard.Rows == game.PlayerBoard.Rows &&
-                                                        p.Player.ConnectionId != game.Player.ConnectionId);
+            lock (GameLobbiesLock)
+            {
+                var index = GameLobbies
+                    .FindIndex(pg => pg.Board.Cols == request.PlayerBoard.Cols &&
+                                     pg.Board.Rows == request.PlayerBoard.Rows &&
+                                     pg.Players.All(p => p.ConnectionId != request.Player.ConnectionId));
 
                 if (index > -1)
                 {
-                    pendingGame = PendingGames[index];
-                    PendingGames.RemoveAt(index);
+                    lobby = GameLobbies[index];
+                    GameLobbies.RemoveAt(index);
                 }
                 else
                 {
-                    PendingGames.Add(game);
+                    GameLobbies.Add(new GameLobby
+                    {
+                        Players = new List<TronPlayer>
+                        {
+                            request.Player
+                        },
+                        Board =  request.PlayerBoard
+                    });
                 }
             }
 
-            return pendingGame;
+            lobby?.Players.Add(request.Player);
+
+            return lobby;
         }
     }
 }

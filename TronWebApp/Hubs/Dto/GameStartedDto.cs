@@ -4,6 +4,6 @@ namespace TronWebApp.Hubs
 {
     public class GameStartedDto
     {
-        public List<PlayerDto> Players { get; set; }               
+        public IEnumerable<PlayerDto> Players { get; set; }               
     }
 }

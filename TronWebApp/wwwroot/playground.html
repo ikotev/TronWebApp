@@ -8,6 +8,12 @@
             margin: 0;
         }
 
+        button:disabled {
+            border: 1px solid #999999;
+            background-color: #cccccc;
+            color: #666666;
+        }
+
         #playground {
             border: 3px solid black;
         }
@@ -32,6 +38,7 @@
                     </p>
 
                     <button id="find-game-button">Find Game</button>
+                    <button id="forfeit-game-button" disabled>Forfeit Game</button>
                 </div>
             </td>
         </tr>
@@ -47,6 +54,7 @@
 
         let game = null;
         let findGameButton = null;
+        let forfeitGameButton = null;
         let canvas = null;
 
         function onWindowLoaded() {
@@ -61,6 +69,9 @@
 
             findGameButton = document.getElementById("find-game-button");
             findGameButton.addEventListener('click', findGame);
+
+            forfeitGameButton = document.getElementById("forfeit-game-button");
+            forfeitGameButton.addEventListener('click', forfeitGame);
 
             window.addEventListener('resize', onWindowResized);
 
@@ -78,7 +89,7 @@
         }
         function playgroundResized(canvas) {
             let width = document.body.clientWidth - 300;
-            let height = document.body.clientHeight -10;
+            let height = document.body.clientHeight - 10;
 
             if (canvas.width !== width || canvas.height !== height) {
                 canvas.width = width;
@@ -90,15 +101,21 @@
             return false;
         }
 
-        function findGame(e) {
+        function forfeitGame() {
+            game.forfeitGame();
+        }
+
+        function findGame() {
             findGameButton.disabled = true;
+            forfeitGameButton.disabled = false;
 
             game.findGame();
         }
 
-        function onGameFinished(model) {
+        function onGameFinished() {
             document.removeEventListener("keydown", keyDown);
             findGameButton.disabled = false;
+            forfeitGameButton.disabled = true;
         }
 
         function onGameStarted(model) {
@@ -107,7 +124,7 @@
 
         function keyDown(evt) {
             let direction = directionEnum.none;
-            
+
             switch (evt.code) {
                 case 'ArrowLeft':
                 case 'KeyA':

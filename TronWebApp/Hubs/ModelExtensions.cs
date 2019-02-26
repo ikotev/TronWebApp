@@ -24,11 +24,10 @@ namespace TronWebApp.Hubs
             };
         }
 
-        public static List<PlayerPositionDto> ToDtos(this List<PlayerPosition> models)
+        public static IEnumerable<PlayerPositionDto> ToDtos(this IEnumerable<PlayerPosition> models)
         {
             return models
-                .Select(m => m.ToDto())
-                .ToList();
+                .Select(m => m.ToDto());
         }
     }
 }

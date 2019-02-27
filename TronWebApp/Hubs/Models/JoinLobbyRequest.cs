@@ -1,6 +1,6 @@
 ﻿namespace TronWebApp.Hubs
 {
-    public class GameLobbyRequest
+    public class JoinLobbyRequest
     {
         public TronPlayer Player { get; set; }
 

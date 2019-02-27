@@ -9,13 +9,15 @@ namespace TronWebApp.Hubs
         private static readonly List<MatchmakingLobby> GameLobbies = new List<MatchmakingLobby>();
         private static readonly object GameLobbiesLock = new object();
 
-        public TronLobby GetOrCreateLobby(GameLobbyRequest request)
+        public TronLobby JoinLobby(JoinLobbyRequest request)
         {
             TronLobby tronLobby;
 
             lock (GameLobbiesLock)
             {
-                var index = GameLobbies.FindIndex(FindLobbyPredicate(request));
+                var index = GameLobbies.FindIndex(lobby => lobby.Board.Cols == request.PlayerBoard.Cols &&
+                                                           lobby.Board.Rows == request.PlayerBoard.Rows &&
+                                                           lobby.Players.All(p => p.ConnectionId != request.Player.ConnectionId));
 
                 if (index > -1)
                 {
@@ -49,15 +51,8 @@ namespace TronWebApp.Hubs
 
             return tronLobby;
         }
-
-        private static Predicate<MatchmakingLobby> FindLobbyPredicate(GameLobbyRequest request)
-        {
-            return lobby => lobby.Board.Cols == request.PlayerBoard.Cols &&
-                            lobby.Board.Rows == request.PlayerBoard.Rows &&
-                            lobby.Players.All(p => p.ConnectionId != request.Player.ConnectionId);
-        }
-
-        public bool TryLeaveLobby(string connectionId)
+     
+        public bool TryToLeaveLobby(string connectionId)
         {
             lock (GameLobbiesLock)
             {

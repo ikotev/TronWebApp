@@ -28,13 +28,13 @@ namespace TronWebApp.Hubs
                 throw new ArgumentException(nameof(FindGameDto));
             }
 
-            var request = new GameLobbyRequest
+            var request = new JoinLobbyRequest
             {
                 PlayerBoard = dto.PlayerBoard.ToModel(),
                 Player = new TronPlayer(dto.PlayerName, Context.ConnectionId)
             };
 
-            var gameLobby = _playersMatchmakingService.GetOrCreateLobby(request);
+            var gameLobby = _playersMatchmakingService.JoinLobby(request);
 
             if (gameLobby.IsReady)
             {
@@ -95,7 +95,7 @@ namespace TronWebApp.Hubs
 
         private async Task DisconnectPlayer(string connectionId)
         {            
-            if (!_playersMatchmakingService.TryLeaveLobby(connectionId))
+            if (!_playersMatchmakingService.TryToLeaveLobby(connectionId))
             {
                 await FinishGame(connectionId, new GameFinishedDto());
             }            

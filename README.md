@@ -1,2 +1,2 @@
 # TronWebApp
-Web based implementation of teh TRON game
+Web based implementation of the TRON game

@@ -3,6 +3,7 @@
     public enum GameState
     {
         None,        
+        Pending,
         Playing,
         Finished        
     }

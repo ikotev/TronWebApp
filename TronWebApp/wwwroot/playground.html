@@ -38,7 +38,15 @@
                     </p>
 
                     <button id="find-game-button">Find Game</button>
-                    <button id="forfeit-game-button" disabled>Forfeit Game</button>
+                    <button id="forfeit-game-button" disabled>Cancel</button>
+
+                    <p>
+                        <b>Game:</b>
+                        <ul>
+                            <li>Name: <span id="player-name"></span></li>
+                            <li>Status: <span id="game-result"></span></li>
+                        </ul>
+                    </p>
                 </div>
             </td>
         </tr>
@@ -56,6 +64,7 @@
         let findGameButton = null;
         let forfeitGameButton = null;
         let canvas = null;
+        let gameStatus = null;
 
         function onWindowLoaded() {
             canvas = document.getElementById('playground');
@@ -64,14 +73,23 @@
 
             let commClient = new SignalRClient();
             game = new TronGame(canvas, commClient);
-            game.onGameStarted = onGameStarted;
-            game.onGameFinished = onGameFinished;
+
+            let playerName = document.getElementById("player-name");
+            playerName.innerText = game.playerName;
+
+            gameStatus = document.getElementById("game-result");            
 
             findGameButton = document.getElementById("find-game-button");
             findGameButton.addEventListener('click', findGame);
 
             forfeitGameButton = document.getElementById("forfeit-game-button");
             forfeitGameButton.addEventListener('click', forfeitGame);
+
+            initControls(false);
+
+            game.onGameStarted = gameStarted;
+            game.onGameFinished = gameFinished;
+            game.onGameConnectionChanged = gameConnectionChanged;
 
             window.addEventListener('resize', onWindowResized);
 
@@ -87,6 +105,7 @@
                 game.resize(canvas.width, canvas.height);
             }
         }
+
         function playgroundResized(canvas) {
             let width = document.body.clientWidth - 300;
             let height = document.body.clientHeight - 10;
@@ -102,24 +121,54 @@
         }
 
         function forfeitGame() {
-            game.forfeitGame();
+            if (game.forfeitGame()) {
+                forfeitGameButton.disabled = true;
+                updateGameStatus('');
+            }
         }
 
         function findGame() {
-            findGameButton.disabled = true;
-            forfeitGameButton.disabled = false;
-
-            game.findGame();
+            if (game.findGame()) {                
+                findGameButton.disabled = true;
+                forfeitGameButton.disabled = false;
+                updateGameStatus('Matchmaking...');
+            }
         }
 
-        function onGameFinished() {
+        function gameFinished(reason) {
             document.removeEventListener("keydown", keyDown);
             findGameButton.disabled = false;
-            forfeitGameButton.disabled = true;
+            forfeitGameButton.disabled = true;            
+
+            updateGameStatus('Game Finished! ' + reason);
         }
 
-        function onGameStarted(model) {
+        function gameStarted(model) {
             document.addEventListener("keydown", keyDown);
+            updateGameStatus('Game Started!');
+        }
+
+        function gameConnectionChanged(isOnline) {
+            if (isOnline) {
+                updateGameStatus('Connected');
+            } else {
+                updateGameStatus('Connection lost!');
+            }
+            initControls(isOnline);
+        }
+
+        function initControls(isGameOnline) {
+            if (!isGameOnline) {
+                findGameButton.disabled = true;
+                forfeitGameButton.disabled = true;
+            } else {
+                findGameButton.disabled = false;
+                forfeitGameButton.disabled = true;
+            }
+        }
+
+        function updateGameStatus(status) {
+            gameStatus.innerText = status;
         }
 
         function keyDown(evt) {

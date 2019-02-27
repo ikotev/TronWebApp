@@ -1,6 +1,6 @@
 ﻿namespace TronWebApp.Hubs
 {
-    public class DirectionChangedDto
+    public class ChangePlayerDirectionDto
     {
         public PlayerDirection Direction { get; set; }
     }

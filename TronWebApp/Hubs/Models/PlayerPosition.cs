@@ -2,10 +2,17 @@
 {
     public class PlayerPosition
     {
-        public int Row { get; set; }
+        public PlayerPosition(int row, int col, PlayerDirection direction)
+        {
+            Row = row;
+            Col = col;
+            Direction = direction;
+        }
 
-        public int Col { get; set; }
+        public int Row { get; }
 
-        public PlayerDirection Direction { get; set; }
+        public int Col { get; }
+
+        public PlayerDirection Direction { get; }
     }
 }

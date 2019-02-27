@@ -8,7 +8,7 @@
             ConnectionId = connectionId;
         }
 
-        public string Name { get; }
+        public string Name { get; set; }
 
         public string ConnectionId { get; }
     }

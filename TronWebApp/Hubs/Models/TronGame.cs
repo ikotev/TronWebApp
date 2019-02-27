@@ -13,7 +13,7 @@ namespace TronWebApp.Hubs
 
         public DateTime? TimeEnded { get; set; }
 
-        public List<TronPlayer> Players { get; set; }
+        public IReadOnlyList<TronPlayer> Players { get; set; }
 
         public GameBoard Board { get; set; }
     }

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace TronWebApp.Hubs
 {
-    public class TronGameHub : Hub<ITronGameClient>
+    public class TronGameHub : Hub<ITronGameClient>, ITronGameServer
     {
         private readonly PlayerMatchmakingService _playersMatchmakingService;
         private readonly PlayerSpawnService _playerSpawnService;
         private readonly GameService _gameService;
-        
+
         public TronGameHub(PlayerMatchmakingService playersMatchmakingService,
             PlayerSpawnService playerSpawnService, GameService gameService)
         {
@@ -26,25 +26,25 @@ namespace TronWebApp.Hubs
                 dto.PlayerBoard.Rows <= 0 || dto.PlayerBoard.Cols <= 0)
             {
                 throw new ArgumentException(nameof(FindGameDto));
-            }            
-            
+            }
+
             var request = new GameLobbyRequest
             {
                 PlayerBoard = dto.PlayerBoard.ToModel(),
-                Player = new TronPlayer(dto.PlayerName, Context.ConnectionId)                
+                Player = new TronPlayer(dto.PlayerName, Context.ConnectionId)
             };
 
             var gameLobby = _playersMatchmakingService.GetOrCreateLobby(request);
 
             if (gameLobby.IsReady)
-            {               
+            {
                 var game = await CreateNewGame(gameLobby);
 
                 await StartGame(game);
             }
         }
 
-        public async Task PlayerDirectionChanged(DirectionChangedDto dto)
+        public async Task ChangePlayerDirection(ChangePlayerDirectionDto dto)
         {
             if (dto == null || !Enum.IsDefined(typeof(PlayerDirection), dto.Direction))
             {
@@ -52,8 +52,8 @@ namespace TronWebApp.Hubs
             }
 
             var connectionId = Context.ConnectionId;
-            var game = _gameService.GetGame(connectionId);            
-            
+            var game = _gameService.GetGame(connectionId);
+
             if (game != null)
             {
                 var playerName = game.Players.First(p => p.ConnectionId == connectionId).Name;
@@ -67,15 +67,43 @@ namespace TronWebApp.Hubs
             }
         }
 
-        public async Task FinishGame(GameFinishedDto dto)
+        public async Task FinishGame(FinishGameDto dto)
         {
-            if (dto == null || string.IsNullOrWhiteSpace(dto.WinnerName))
+            if (dto == null)
             {
                 throw new ArgumentException(nameof(FindGameDto));
             }
 
             var connectionId = Context.ConnectionId;
-            var game = _gameService.RemoveGame(connectionId);            
+            await FinishGame(connectionId, dto.ToGameFinishedDto());
+        }        
+
+        public async Task ForfeitGame(GameForfeitedDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.PlayerName))
+            {
+                throw new ArgumentException(nameof(FindGameDto));
+            }
+            
+            await DisconnectPlayer(Context.ConnectionId);
+        }
+
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            await DisconnectPlayer(Context.ConnectionId);
+        }
+
+        private async Task DisconnectPlayer(string connectionId)
+        {            
+            if (!_playersMatchmakingService.TryLeaveLobby(connectionId))
+            {
+                await FinishGame(connectionId, new GameFinishedDto());
+            }            
+        }
+
+        private async Task FinishGame(string connectionId, GameFinishedDto dto)
+        {
+            var game = _gameService.RemoveGame(connectionId);
 
             if (game != null)
             {
@@ -106,12 +134,12 @@ namespace TronWebApp.Hubs
                 Players = playerDtos
             };
 
-            await Clients.Group(game.GroupName).ReceiveStartGame(dto);
+            await Clients.Group(game.GroupName).ReceiveGameStarted(dto);
         }
 
-        private async Task<TronGame> CreateNewGame(GameLobby gameLobby)
+        private async Task<TronGame> CreateNewGame(TronLobby tronLobby)
         {
-            var game = _gameService.CreateNewGame(gameLobby);
+            var game = _gameService.CreateNewGame(tronLobby);
 
             foreach (var player in game.Players)
             {

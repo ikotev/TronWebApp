@@ -3,7 +3,7 @@
 class SignalRClient {
     constructor(hubUrl = "/tron-game-hub") {
         this.hubUrl = hubUrl;
-        this.connection = null;
+        this.connection = null;        
         this.init();
     }
 
@@ -17,11 +17,11 @@ class SignalRClient {
             model => {
                 this.onReceivePlayerDirectionChanged(model);
             });
-
-        this.onReceiveStartGame = () => {};
-        this.connection.on("receiveStartGame",
+        
+        this.onReceiveGameStarted = () => {};
+        this.connection.on("receiveGameStarted",
             model => {
-                this.onReceiveStartGame(model);
+                this.onReceiveGameStarted(model);
             });
 
         this.onReceiveGameFinished = () => { };
@@ -30,26 +30,39 @@ class SignalRClient {
                 this.onReceiveGameFinished(model);
             });
 
-        this.connection.onclose(async () => {
+        this.onConnectionChanged = () => { };
+
+        this.connection.onclose(async () => {            
+            this.onConnectionChanged(false);
             console.log('connection closed');
             await this.connect();
-        });
+        });        
     }
 
     async connect() {
         try {
-            await this.connection.start();
+            await this.connection.start();            
+            this.onConnectionChanged(true);
             console.log('connected');
         } catch (err) {
             console.log(err);
             setTimeout(() => this.connect(), 5000);
         }
     }
-
+    
     async disconnect() {
         try {
             await this.connection.stop();
             console.log('disconnected');
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    async forfeitGame(playerName) {
+        try {
+            let model = { playerName: playerName };
+            let result = await this.connection.invoke("ForfeitGame", model);
         } catch (err) {
             console.log(err);
         }
@@ -63,10 +76,10 @@ class SignalRClient {
             console.log(err);
         }
     }
-
-    async playerDirectionChanged(direction) {
+    
+    async changePlayerDirection(direction) {
         try {
-            let result = await this.connection.invoke("PlayerDirectionChanged", { direction });
+            let result = await this.connection.invoke("ChangePlayerDirection", { direction });
         } catch (err) {
             console.log(err);
         }

@@ -13,21 +13,8 @@ namespace TronWebApp.Hubs
             {
                 var xCenter = board.Cols / 2;
 
-                positions.Add(new PlayerPosition
-                {
-                    Col = xCenter,
-                    Row = board.Rows - 1,
-                    Direction = PlayerDirection.Up
-
-                });
-
-                positions.Add(new PlayerPosition
-                {
-                    Col = xCenter,
-                    Row = 0,
-                    Direction = PlayerDirection.Down
-
-                });
+                positions.Add(new PlayerPosition(board.Rows - 1, xCenter, PlayerDirection.Up));
+                positions.Add(new PlayerPosition(0, xCenter, PlayerDirection.Down));                
             }
             else
             {

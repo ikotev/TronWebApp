@@ -8,6 +8,6 @@ namespace TronWebApp.Hubs
 
         Task ReceiveGameFinished(GameFinishedDto dto);
 
-        Task ReceiveStartGame(GameStartedDto dto);
+        Task ReceiveGameStarted(GameStartedDto dto);
     }
 }

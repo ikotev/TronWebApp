@@ -22,7 +22,7 @@ const defaultFrameColor = 'red';
 const defaultGridColor = 'silver';
 
 const directionEnum = { none: 0, left: 1, up: 2, right: 3, down: 4 };
-const gameStateEnum = { none: 0, playing: 1, finished: 2 };
+const gameStateEnum = { none: 0, pending: 1, playing: 2, finished: 3 };
 const playerGameResultEnum = { none: 0, winner: 1, loser: 2, draw: 3 };
 
 class Player {
@@ -491,9 +491,10 @@ class TronGame {
         this.ctx = this.canvas.getContext('2d');
 
         this.commClient = commClient;
-        this.commClient.onReceiveStartGame = (model) => this.startGame(model);
-        this.commClient.onReceiveGameFinished = (model) => this.finishGame(model);
+        this.commClient.onReceiveGameStarted = (model) => this.gameStarted(model);
+        this.commClient.onReceiveGameFinished = (model) => this.gameFinished(model);
         this.commClient.onReceivePlayerDirectionChanged = (model) => this.changePlayerDirection(model);
+        this.commClient.onConnectionChanged = (isOnline) => this.connectionChanged(isOnline);
         this.commClient.connect();
 
         let boardModel = new Board({});
@@ -517,11 +518,16 @@ class TronGame {
 
         this.onGameStarted = () => { };
         this.onGameFinished = () => { };
+        this.onGameConnectionChanged = () => { };
 
         this.invalidate();
     }
 
-    startGame(model) {
+    gameStarted(model) {
+        if (this.state !== gameStateEnum.pending) {
+            return;
+        }
+
         for (let i = 0; i < model.players.length; i++) {
             let player = model.players[i];
 
@@ -540,39 +546,87 @@ class TronGame {
     }
 
     changePlayerDirection(model) {
+        if (this.state !== gameStateEnum.playing) {
+            return;
+        }
+
         this.setPlayerDirection(model.playerName, model.direction);
     }
 
-    finishGame(model) {
+    connectionChanged(isOnline) {
+        if (!isOnline) {
+            if (this.state === gameStateEnum.pending || this.state === gameStateEnum.playing) {
+                if (this.state === gameStateEnum.playing) {
+                    this.stop();    
+                }                              
+            }        
+
+            this.state = gameStateEnum.none;
+        }
+        
+        this.onGameConnectionChanged(isOnline);
+    }
+
+    gameFinished(model) {
+        if (this.state !== gameStateEnum.playing) {
+            return;
+        }
+
         this.stop();
+        this.onGameFinished(this.getGameResult(model.winnerName));
 
         for (let i = 0; i < this.model.playerModels.length; i++) {
             let player = this.model.playerModels[i];
             let result;
-            if (player.name === model.winnerName) {
-                result = playerGameResultEnum.winner;
-            } else {
-                result = playerGameResultEnum.loser;
-            }
 
+            if (model.winnerName) {
+                if (player.name === model.winnerName) {
+                    result = playerGameResultEnum.winner;
+                } else {
+                    result = playerGameResultEnum.loser;
+                }
+            } else {
+                result = playerGameResultEnum.draw;
+            }
+            
             player.setGameResult(result);
         }
 
-        this.invalidate();
+        this.invalidate();                      
     }
 
     forfeitGame() {
+        if (this.state !== gameStateEnum.pending && this.state !== gameStateEnum.playing) {
+            return false;
+        }
 
+        if (this.state === gameStateEnum.pending) {
+            this.state = gameStateEnum.none;
+        } else if (this.state === gameStateEnum.playing) {
+            this.stop();
+        }
+        
+        this.commClient.forfeitGame(this.playerName);
+        this.onGameFinished('Game cancelled');
+
+        return true;
     }
 
     findGame() {
-        if (this.state === gameStateEnum.finished) {
-            this.removeAllPlayers();
-            this.state = gameStateEnum.none;
+        if (this.state !== gameStateEnum.none && this.state !== gameStateEnum.finished) {
+            return false;
         }
+
+        if (this.state === gameStateEnum.finished) {
+            this.removeAllPlayers();            
+        }        
+
+        this.state = gameStateEnum.pending;
 
         let playerBoard = { rows: this.model.boardModel.rows, cols: this.model.boardModel.cols };
         this.commClient.findGame(this.playerName, playerBoard);
+
+        return true;
     }
 
     addPlayer(name, positionModel, color = defaultPlayerColor) {
@@ -619,9 +673,7 @@ class TronGame {
         this.engineTimer = null;
 
         this.state = gameStateEnum.finished;
-        this.invalidate();
-
-        this.onGameFinished();
+        this.invalidate();        
     }
 
     engine() {        
@@ -633,18 +685,33 @@ class TronGame {
         }
 
         let collisions = this.detectCollisions(activePlayers);
-        let winner = null;
+        let winnerName = null;
+        let gameFinished = false;
 
         if (collisions.length === activePlayers.length - 1) {
-            winner = activePlayers.find(p => p.isPlaying);
-            winner.setGameResult(playerGameResultEnum.winner);            
-        }  
+            let winner = activePlayers.find(p => p.isPlaying);
+            winner.setGameResult(playerGameResultEnum.winner);
+            winnerName = winner.name;
+            gameFinished = true;
+        } else if (collisions.length === activePlayers.length) {
+            winnerName = '';
+            gameFinished = true;
+        }
 
-        this.invalidate();
+        if (!gameFinished) {
+            this.invalidate();
+        } else {
+            this.stop();            
+            this.commClient.finishGame(winnerName);
+            this.onGameFinished(this.getGameResult(winnerName));
+        }
+    }
 
-        if (winner !== null) {
-            this.stop();
-            this.commClient.finishGame(winner.name);        
+    getGameResult(winnerName) {
+        if (winnerName) {
+            return 'Winner ' + winnerName;
+        } else {
+            return 'Draw!';
         }
     }
 
@@ -682,7 +749,7 @@ class TronGame {
         let directionChanged = this.setPlayerDirection(this.playerName, newDirection);
 
         if (directionChanged) {
-            this.commClient.playerDirectionChanged(newDirection);
+            this.commClient.changePlayerDirection(newDirection);
         }
     }
 

@@ -9,7 +9,7 @@ namespace TronWebApp.Hubs
             new Dictionary<string, TronGame>();
         private static readonly object MapLock = new object();
 
-        public TronGame CreateNewGame(GameLobby gameLobby)
+        public TronGame CreateNewGame(TronLobby tronLobby)
         {
             var groupName = Guid.NewGuid().ToString();
 
@@ -18,8 +18,8 @@ namespace TronWebApp.Hubs
                 GroupName = groupName,
                 State = GameState.Playing,
                 TimeCreated = DateTime.UtcNow,
-                Players = gameLobby.Players,
-                Board = gameLobby.Board
+                Players = tronLobby.Players,
+                Board = tronLobby.Board
             };
 
             lock (MapLock)

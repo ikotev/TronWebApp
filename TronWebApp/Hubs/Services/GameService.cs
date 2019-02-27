@@ -26,27 +26,27 @@ namespace TronWebApp.Hubs
             {
                 foreach (var player in game.Players)
                 {
-                    Map.Add(player.ConnectionId, game);
+                    Map.Add(player.Key, game);
                 }
             }           
 
             return game;
         }
 
-        public TronGame RemoveGame(string connectionId)
+        public TronGame DisbandPlayerGame(string playerKey)
         {
             TronGame game;
 
             lock (MapLock)
             {
-                if (Map.TryGetValue(connectionId, out game))
+                if (Map.TryGetValue(playerKey, out game))
                 {
                     game.State = GameState.Finished;
                     game.TimeEnded = DateTime.UtcNow;
 
                     foreach (var player in game.Players)
                     {
-                        Map.Remove(player.ConnectionId, out _);
+                        Map.Remove(player.Key, out _);
                     }
                 }
             }
@@ -54,13 +54,13 @@ namespace TronWebApp.Hubs
             return game;
         }
 
-        public TronGame GetGame(string connectionId)
+        public TronGame GetPlayerGame(string playerKey)
         {
             TronGame game;
 
             lock (MapLock)
             {
-                if (Map.TryGetValue(connectionId, out game))
+                if (Map.TryGetValue(playerKey, out game))
                 {
                     
                 }

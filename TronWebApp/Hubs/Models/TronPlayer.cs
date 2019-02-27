@@ -2,14 +2,14 @@
 {
     public class TronPlayer
     {
-        public TronPlayer(string name, string connectionId)
+        public TronPlayer(string name, string key)
         {
             Name = name;
-            ConnectionId = connectionId;
+            Key = key;
         }
 
         public string Name { get; set; }
 
-        public string ConnectionId { get; }
+        public string Key { get; }
     }
 }

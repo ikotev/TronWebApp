@@ -17,7 +17,7 @@ namespace TronWebApp.Hubs
             {
                 var index = GameLobbies.FindIndex(lobby => lobby.Board.Cols == request.PlayerBoard.Cols &&
                                                            lobby.Board.Rows == request.PlayerBoard.Rows &&
-                                                           lobby.Players.All(p => p.ConnectionId != request.Player.ConnectionId));
+                                                           lobby.Players.All(p => p.Key != request.Player.Key));
 
                 if (index > -1)
                 {
@@ -52,16 +52,16 @@ namespace TronWebApp.Hubs
             return tronLobby;
         }
      
-        public bool TryToLeaveLobby(string connectionId)
+        public bool TryToLeaveLobby(string playerKey)
         {
             lock (GameLobbiesLock)
             {
-                var index = GameLobbies.FindIndex(lobby => lobby.Players.Any(p => p.ConnectionId == connectionId));
+                var index = GameLobbies.FindIndex(lobby => lobby.Players.Any(p => p.Key == playerKey));
 
                 if (index > -1)
                 {
                     var lobby = GameLobbies[index];
-                    lobby.Players.RemoveAll(p => p.ConnectionId == connectionId);
+                    lobby.Players.RemoveAll(p => p.Key == playerKey);
                     lobby.IsReady = false;
 
                     if (lobby.Players.Count == 0)

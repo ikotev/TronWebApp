@@ -52,11 +52,11 @@ namespace TronWebApp.Hubs
             }
 
             var connectionId = Context.ConnectionId;
-            var game = _gameService.GetGame(connectionId);
+            var game = _gameService.GetPlayerGame(connectionId);
 
             if (game != null)
             {
-                var playerName = game.Players.First(p => p.ConnectionId == connectionId).Name;
+                var playerName = game.Players.First(p => p.Key == connectionId).Name;
 
                 await Clients.GroupExcept(game.GroupName, connectionId)
                     .ReceivePlayerDirectionChanged(new PlayerDirectionChangedDto
@@ -103,7 +103,7 @@ namespace TronWebApp.Hubs
 
         private async Task FinishGame(string connectionId, GameFinishedDto dto)
         {
-            var game = _gameService.RemoveGame(connectionId);
+            var game = _gameService.DisbandPlayerGame(connectionId);
 
             if (game != null)
             {
@@ -112,7 +112,7 @@ namespace TronWebApp.Hubs
 
                 foreach (var player in game.Players)
                 {
-                    await Groups.RemoveFromGroupAsync(player.ConnectionId, game.GroupName);
+                    await Groups.RemoveFromGroupAsync(player.Key, game.GroupName);
                 }
             }
         }
@@ -143,7 +143,7 @@ namespace TronWebApp.Hubs
 
             foreach (var player in game.Players)
             {
-                await Groups.AddToGroupAsync(player.ConnectionId, game.GroupName);
+                await Groups.AddToGroupAsync(player.Key, game.GroupName);
             }
 
             return game;

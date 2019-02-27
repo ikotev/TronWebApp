@@ -7,11 +7,7 @@ namespace TronWebApp.Hubs
     {
         public static GameBoard ToModel(this GameBoardDto dto)
         {
-            return new GameBoard
-            {
-                Cols = dto.Cols,
-                Rows = dto.Rows
-            };
+            return new GameBoard(dto.Rows, dto.Cols);
         }
 
         public static PlayerPositionDto ToDto(this PlayerPosition model)

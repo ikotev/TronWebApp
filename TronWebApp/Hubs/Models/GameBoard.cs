@@ -2,8 +2,14 @@
 {
     public class GameBoard
     {
-        public int Rows { get; set; }
+        public GameBoard(int rows, int cols)
+        {
+            Rows = rows;
+            Cols = cols;
+        }
 
-        public int Cols { get; set; }
+        public int Rows { get; }
+
+        public int Cols { get; }
     }
 }

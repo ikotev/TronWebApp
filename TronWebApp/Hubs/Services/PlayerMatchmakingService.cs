@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace TronWebApp.Hubs
@@ -8,38 +9,82 @@ namespace TronWebApp.Hubs
         private static readonly List<GameLobby> GameLobbies = new List<GameLobby>();
         private static readonly object GameLobbiesLock = new object();
 
-        public GameLobby TryFind(GameLobbyRequest request)
+        public GameLobby GetOrCreateLobby(GameLobbyRequest request)
         {
-            GameLobby lobby = null;
+            GameLobby lobby;
 
             lock (GameLobbiesLock)
             {
-                var index = GameLobbies
-                    .FindIndex(pg => pg.Board.Cols == request.PlayerBoard.Cols &&
-                                     pg.Board.Rows == request.PlayerBoard.Rows &&
-                                     pg.Players.All(p => p.ConnectionId != request.Player.ConnectionId));
+                var index = GameLobbies.FindIndex(FindLobbyPredicate(request));
 
                 if (index > -1)
                 {
                     lobby = GameLobbies[index];
-                    GameLobbies.RemoveAt(index);
+                    lobby.Players.Add(request.Player);
+                    lobby.IsReady = lobby.Players.Count == 2;
+
+                    if (lobby.IsReady)
+                    {
+                        GameLobbies.RemoveAt(index);
+                    }
+                    else
+                    {
+                        lobby = lobby.GetSafeClone();
+                    }
+
                 }
                 else
                 {
-                    GameLobbies.Add(new GameLobby
+                    lobby = new GameLobby
                     {
                         Players = new List<TronPlayer>
                         {
                             request.Player
                         },
-                        Board =  request.PlayerBoard
-                    });
+                        Board = request.PlayerBoard
+                    };
+
+                    GameLobbies.Add(lobby);
+
+                    lobby = lobby.GetSafeClone();
                 }
             }
 
-            lobby?.Players.Add(request.Player);
-
             return lobby;
+        }
+
+        private static Predicate<GameLobby> FindLobbyPredicate(GameLobbyRequest request)
+        {
+            return lobby => lobby.Board.Cols == request.PlayerBoard.Cols &&
+                            lobby.Board.Rows == request.PlayerBoard.Rows &&
+                            lobby.Players.All(p => p.ConnectionId != request.Player.ConnectionId);
+        }
+
+        public bool TryLeaveLobby(GameLobbyRequest request, out GameLobby lobby)
+        {
+            lock (GameLobbiesLock)
+            {
+                var index = GameLobbies.FindIndex(FindLobbyPredicate(request));
+
+                if (index > -1)
+                {
+                    lobby = GameLobbies[index];
+                    lobby.Players.RemoveAll(p => p.ConnectionId == request.Player.ConnectionId);
+                    lobby.IsReady = false;
+
+                    if (lobby.Players.Count == 0)
+                    {
+                        GameLobbies.RemoveAt(index);
+                    }
+
+                    lobby = lobby.GetSafeClone();
+
+                    return true;
+                }
+            }
+
+            lobby = null;
+            return false;
         }
     }
 }

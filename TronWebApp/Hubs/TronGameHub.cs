@@ -34,15 +34,12 @@ namespace TronWebApp.Hubs
             var request = new GameLobbyRequest
             {
                 PlayerBoard = dto.PlayerBoard.ToModel(),
-                Player = new TronPlayer
-                {
-                    Name = dto.PlayerName,
-                    ConnectionId = Context.ConnectionId
-                }
+                Player = new TronPlayer(dto.PlayerName, Context.ConnectionId)                
             };
-            var gameLobby = _playersMatchmakingService.TryFind(request);
 
-            if (gameLobby != null)
+            var gameLobby = _playersMatchmakingService.GetOrCreateLobby(request);
+
+            if (gameLobby.IsReady)
             {               
                 var game = await CreateNewGame(gameLobby);
 
@@ -65,6 +62,7 @@ namespace TronWebApp.Hubs
                 PlayerGameMap.TryGetValue(connectionId, out game);
             }
 
+            // WRONG, Players can now change !!!!
             if (game != null)
             {
                 var playerName = game.Players.First(p => p.ConnectionId == connectionId).Name;

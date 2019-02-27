@@ -11,6 +11,8 @@ namespace TronWebApp.Hubs
 
         public DateTime TimeCreated { get; set; }
 
+        public DateTime? TimeEnded { get; set; }
+
         public List<TronPlayer> Players { get; set; }
 
         public GameBoard Board { get; set; }

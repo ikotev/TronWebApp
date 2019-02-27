@@ -34,6 +34,7 @@ namespace TronWebApp
 
             services.AddTransient<PlayerMatchmakingService>();
             services.AddTransient<PlayerSpawnService>();            
+            services.AddTransient<GameService>();            
         }
         
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

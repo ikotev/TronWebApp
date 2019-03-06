@@ -24,6 +24,7 @@ const defaultGridColor = 'silver';
 const directionEnum = { none: 0, left: 1, up: 2, right: 3, down: 4 };
 const gameStateEnum = { none: 0, pending: 1, playing: 2, finished: 3 };
 const playerGameResultEnum = { none: 0, winner: 1, loser: 2, draw: 3 };
+const collisionDetectionEnum = { none: 0, board: 1, player: 2 };
 
 class Player {
     constructor({ name }) {
@@ -124,12 +125,12 @@ class Player {
 class PlayerLayer {
     constructor({ playerModel, boardLayer, color,
         widthRatio = defaultPlayerWidthRatio, heightRatio = defaultPlayerHeightRatio,
-        drawColor = defaultDrawColor, loserColor = defaultLoserColor, winnerColor = defaultWinnerColor}) {
+        drawColor = defaultDrawColor, loserColor = defaultLoserColor, winnerColor = defaultWinnerColor }) {
 
         this.playerModel = playerModel;
         this.boardLayer = boardLayer;
         this.widthRatio = widthRatio;
-        this.heightRatio = heightRatio;        
+        this.heightRatio = heightRatio;
         this.color = color;
 
         this.drawColor = drawColor;
@@ -150,7 +151,7 @@ class PlayerLayer {
         this.squareYOffset = (this.boardLayer.squareHeight - this.height) / 2;
     }
 
-    resize() {        
+    resize() {
         this.setDimensions();
     }
 
@@ -159,37 +160,37 @@ class PlayerLayer {
 
         if (playerModel.trail.length === 0) {
             return;
-        }        
+        }
 
         const boardLayer = this.boardLayer;
         const trail = playerModel.trail;
         const n = trail.length - 1;
-        let previous = trail[n];        
-        
-        for (let i = n; i >= 0; i--) {  
+        let previous = trail[n];
+
+        for (let i = n; i >= 0; i--) {
             const x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
             const y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
 
             if (i === n) {
-                this.drawHead(ctx, x , y);                
-            } else {            
+                this.drawHead(ctx, x, y);
+            } else {
                 ctx.fillStyle = this.color;
 
                 if (previous.isHorizontalMove() !== trail[i].isHorizontalMove()) {
                     this.drawJoint(ctx, x, y);
                 } else {
                     this.drawContinuation(ctx, trail[i], x, y);
-                }                
+                }
             }
 
             previous = trail[i];
         }
-    }    
+    }
 
     drawContinuation(ctx, trailPart, x, y) {
         let width;
         let height;
-        const boardLayer = this.boardLayer;        
+        const boardLayer = this.boardLayer;
 
         if (!trailPart.isHorizontalMove()) {
             x += this.squareXOffset;
@@ -208,7 +209,7 @@ class PlayerLayer {
         ctx.fillRect(x, y, width, height);
     }
 
-    drawJoint(ctx,x, y) {
+    drawJoint(ctx, x, y) {
         const boardLayer = this.boardLayer;
 
         ctx.fillRect(x, y, boardLayer.squareWidth, boardLayer.squareHeight);
@@ -239,29 +240,31 @@ class PlayerLayer {
                 color = this.color;
                 break;
         }
-        
+
         return color;
     }
 }
 
 class Collision {
-    constructor(player) {
+    constructor(player, detectionType) {
         this.player = player;
+        this.detectionType = detectionType;
     }
 }
 
 class CollisionDetection {
     constructor(collisionDetectors) {
-        this.collisionDetectors = collisionDetectors;
+        this.collisionDetectors = collisionDetectors;        
     }
 
     detect(activePlayers) {
         let collisions = [];
 
         for (let i = 0; i < activePlayers.length; i++) {
-            if (this.detectCollisionForPlayer(activePlayers[i])) {
-                collisions.push(new Collision(activePlayers[i]));
-            }
+            const collisionType = this.detectCollisionForPlayer(activePlayers[i]);
+            if (collisionType !== collisionDetectionEnum.none) {
+                collisions.push(new Collision(activePlayers[i], collisionType));
+            }                            
         }
 
         return collisions;
@@ -269,18 +272,20 @@ class CollisionDetection {
 
     detectCollisionForPlayer(player) {
         for (let i = 0; i < this.collisionDetectors.length; i++) {
-            if (this.collisionDetectors[i].detect(player)) {
-                return true;
+            const collisionDetector = this.collisionDetectors[i];
+            if (collisionDetector.detect(player)) {
+                return collisionDetector.collisionType;
             }
         }
 
-        return false;
+        return collisionDetectionEnum.none;
     }
 }
 
 class BoardCollisionDetection {
     constructor(board) {
         this.board = board;
+        this.collisionType = collisionDetectionEnum.board;
     }
 
     detect(player) {
@@ -292,6 +297,7 @@ class BoardCollisionDetection {
 class PlayerCollisionDetection {
     constructor(players) {
         this.players = players;
+        this.collisionType = collisionDetectionEnum.player;
     }
 
     detect(player) {
@@ -556,13 +562,13 @@ class TronGame {
         if (!isOnline) {
             if (this.state === gameStateEnum.pending || this.state === gameStateEnum.playing) {
                 if (this.state === gameStateEnum.playing) {
-                    this.stop();    
-                }                              
-            }        
+                    this.stop();
+                }
+            }
 
             this.state = gameStateEnum.none;
         }
-        
+
         this.onGameConnectionChanged(isOnline);
     }
 
@@ -587,11 +593,11 @@ class TronGame {
             } else {
                 result = playerGameResultEnum.draw;
             }
-            
+
             player.setGameResult(result);
         }
 
-        this.invalidate();                      
+        this.invalidate();
     }
 
     forfeitGame() {
@@ -604,7 +610,7 @@ class TronGame {
         } else if (this.state === gameStateEnum.playing) {
             this.stop();
         }
-        
+
         this.commClient.forfeitGame(this.playerName);
         this.onGameFinished('Game cancelled');
 
@@ -617,8 +623,8 @@ class TronGame {
         }
 
         if (this.state === gameStateEnum.finished) {
-            this.removeAllPlayers();            
-        }        
+            this.removeAllPlayers();
+        }
 
         this.state = gameStateEnum.pending;
 
@@ -672,10 +678,10 @@ class TronGame {
         this.engineTimer = null;
 
         this.state = gameStateEnum.finished;
-        this.invalidate();        
+        this.invalidate();
     }
 
-    engine() {        
+    engine() {
         const players = this.model.playerModels;
         const activePlayers = players.filter(p => p.isPlaying);
 
@@ -700,7 +706,7 @@ class TronGame {
         if (!gameFinished) {
             this.invalidate();
         } else {
-            this.stop();            
+            this.stop();
             this.commClient.finishGame(winnerName);
             this.onGameFinished(this.getGameResult(winnerName));
         }
@@ -725,7 +731,7 @@ class TronGame {
                 const player = collisions[i].player;
                 player.setGameResult(gameResult);
                 player.undoMove();
-            }            
+            }
         }
 
         return collisions;
@@ -757,7 +763,7 @@ class TronGame {
             const index = this.findPlayerIndex(playerName);
             if (index > -1) {
                 const player = this.model.playerModels[index];
-                return player.setDirection(newDirection);                
+                return player.setDirection(newDirection);
             }
         }
 

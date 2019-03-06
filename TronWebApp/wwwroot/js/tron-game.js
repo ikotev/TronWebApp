@@ -123,13 +123,18 @@ class Player {
 
 class PlayerLayer {
     constructor({ playerModel, boardLayer, color,
-        widthRatio = defaultPlayerWidthRatio, heightRatio = defaultPlayerHeightRatio }) {
+        widthRatio = defaultPlayerWidthRatio, heightRatio = defaultPlayerHeightRatio,
+        drawColor = defaultDrawColor, loserColor = defaultLoserColor, winnerColor = defaultWinnerColor}) {
 
         this.playerModel = playerModel;
         this.boardLayer = boardLayer;
         this.widthRatio = widthRatio;
         this.heightRatio = heightRatio;        
         this.color = color;
+
+        this.drawColor = drawColor;
+        this.loserColor = loserColor;
+        this.winnerColor = winnerColor;
 
         this.setDimensions();
     }
@@ -154,18 +159,12 @@ class PlayerLayer {
 
         if (playerModel.trail.length === 0) {
             return;
-        }
-
-        if (playerModel.gameResult !== playerGameResultEnum.none) {
-            this.drawGameResult(ctx);
-        }
+        }        
 
         const boardLayer = this.boardLayer;
         const trail = playerModel.trail;
         const n = trail.length - 1;
-        let previous = trail[n];
-
-        ctx.fillStyle = this.color;
+        let previous = trail[n];        
         
         for (let i = n; i >= 0; i--) {  
             const x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
@@ -173,7 +172,9 @@ class PlayerLayer {
 
             if (i === n) {
                 this.drawHead(ctx, x , y);                
-            } else {                
+            } else {            
+                ctx.fillStyle = this.color;
+
                 if (previous.isHorizontalMove() !== trail[i].isHorizontalMove()) {
                     this.drawJoint(ctx, x, y);
                 } else {
@@ -214,34 +215,32 @@ class PlayerLayer {
     }
 
     drawHead(ctx, x, y) {
+        ctx.fillStyle = this.getHeadColor();
         ctx.beginPath();
         ctx.arc(x + this.headXOffset, y + this.headYOffset, this.headRadius, 0, Math.PI * 2, true);
         ctx.closePath();
         ctx.fill();
     }
 
-    drawGameResult(ctx) {
-        const trail = this.playerModel.trail;
-        const row = trail[trail.length - 1].position.row;
-        const col = trail[trail.length - 1].position.col;
-
-        const boardLayer = this.boardLayer;
-        const x = boardLayer.xOffset + col * boardLayer.squareWidth;
-        const y = boardLayer.yOffset + row * boardLayer.squareHeight;
+    getHeadColor() {
+        let color = this.color;
 
         switch (this.playerModel.gameResult) {
             case playerGameResultEnum.loser:
-                ctx.fillStyle = defaultLoserColor;
+                color = this.loserColor;
                 break;
             case playerGameResultEnum.draw:
-                ctx.fillStyle = defaultDrawColor;
+                color = this.drawColor;
                 break;
             case playerGameResultEnum.winner:
-                ctx.fillStyle = defaultWinnerColor;
+                color = this.winnerColor;
+                break;
+            default:
+                color = this.color;
                 break;
         }
-
-        ctx.fillRect(x, y, boardLayer.squareWidth, boardLayer.squareHeight);
+        
+        return color;
     }
 }
 

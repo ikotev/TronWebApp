@@ -71,10 +71,10 @@
             canvas.width = defaultBoardWidth;
             canvas.height = defaultBoardHeight;
 
-            let commClient = new SignalRClient();
+            const commClient = new SignalRClient();
             game = new TronGame(canvas, commClient);
 
-            let playerName = document.getElementById("player-name");
+            const playerName = document.getElementById("player-name");
             playerName.innerText = game.playerName;
 
             gameStatus = document.getElementById("game-result");            
@@ -107,8 +107,8 @@
         }
 
         function playgroundResized(canvas) {
-            let width = document.body.clientWidth - 300;
-            let height = document.body.clientHeight - 10;
+            const width = document.body.clientWidth - 300;
+            const height = document.body.clientHeight - 10;
 
             if (canvas.width !== width || canvas.height !== height) {
                 canvas.width = width;

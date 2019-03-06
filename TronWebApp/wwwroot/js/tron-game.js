@@ -86,7 +86,7 @@ class Player {
             return;
         }
 
-        let lastPosition = this.trail[this.trail.length - 1].position;
+        const lastPosition = this.trail[this.trail.length - 1].position;
         let x = lastPosition.col;
         let y = lastPosition.row;
 
@@ -105,7 +105,7 @@ class Player {
                 break;
         }
 
-        let newPosition = new BoardPosition(x, y);
+        const newPosition = new BoardPosition(x, y);
 
         this.trail.push(new TrailPart(newPosition, this.direction));
         this.canChangeDirection = true;
@@ -150,7 +150,7 @@ class PlayerLayer {
     }
 
     draw(ctx) {
-        let playerModel = this.playerModel;
+        const playerModel = this.playerModel;
 
         if (playerModel.trail.length === 0) {
             return;
@@ -160,16 +160,16 @@ class PlayerLayer {
             this.drawGameResult(ctx);
         }
 
-        let boardLayer = this.boardLayer;
-        let trail = playerModel.trail;
-        let n = trail.length - 1;
+        const boardLayer = this.boardLayer;
+        const trail = playerModel.trail;
+        const n = trail.length - 1;
         let previous = trail[n];
 
         ctx.fillStyle = this.color;
         
         for (let i = n; i >= 0; i--) {  
-            let x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
-            let y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
+            const x = boardLayer.xOffset + trail[i].position.col * boardLayer.squareWidth;
+            const y = boardLayer.yOffset + trail[i].position.row * boardLayer.squareHeight;
 
             if (i === n) {
                 this.drawHead(ctx, x , y);                
@@ -188,7 +188,7 @@ class PlayerLayer {
     drawContinuation(ctx, trailPart, x, y) {
         let width;
         let height;
-        let boardLayer = this.boardLayer;        
+        const boardLayer = this.boardLayer;        
 
         if (!trailPart.isHorizontalMove()) {
             x += this.squareXOffset;
@@ -208,7 +208,7 @@ class PlayerLayer {
     }
 
     drawJoint(ctx,x, y) {
-        let boardLayer = this.boardLayer;
+        const boardLayer = this.boardLayer;
 
         ctx.fillRect(x, y, boardLayer.squareWidth, boardLayer.squareHeight);
     }
@@ -221,13 +221,13 @@ class PlayerLayer {
     }
 
     drawGameResult(ctx) {
-        let trail = this.playerModel.trail;
-        let row = trail[trail.length - 1].position.row;
-        let col = trail[trail.length - 1].position.col;
+        const trail = this.playerModel.trail;
+        const row = trail[trail.length - 1].position.row;
+        const col = trail[trail.length - 1].position.col;
 
-        let boardLayer = this.boardLayer;
-        let x = boardLayer.xOffset + col * boardLayer.squareWidth;
-        let y = boardLayer.yOffset + row * boardLayer.squareHeight;
+        const boardLayer = this.boardLayer;
+        const x = boardLayer.xOffset + col * boardLayer.squareWidth;
+        const y = boardLayer.yOffset + row * boardLayer.squareHeight;
 
         switch (this.playerModel.gameResult) {
             case playerGameResultEnum.loser:
@@ -296,7 +296,7 @@ class PlayerCollisionDetection {
     }
 
     detect(player) {
-        let head = player.trail[player.trail.length - 1].position;
+        const head = player.trail[player.trail.length - 1].position;
 
         if (this.detectTrailCollision(head, player.trail, player.trail.length - 2)) {
             return true;
@@ -354,7 +354,7 @@ class Board {
     }
 
     isPositionInside(boardPosition) {
-        let isPositionInside = boardPosition.col >= 0 && boardPosition.col <= this.cols - 1 &&
+        const isPositionInside = boardPosition.col >= 0 && boardPosition.col <= this.cols - 1 &&
             boardPosition.row >= 0 && boardPosition.row <= this.rows - 1;
 
         return isPositionInside;
@@ -410,7 +410,7 @@ class BoardLayer {
     }
 
     draw(ctx) {
-        let boardModel = this.boardModel;
+        const boardModel = this.boardModel;
         const frameSize = this.isFrameVisible ? this.frameSize : 0;
 
         const height = this.clientHeight - this.yPadding + frameSize;
@@ -497,8 +497,8 @@ class TronGame {
         this.commClient.onConnectionChanged = (isOnline) => this.connectionChanged(isOnline);
         this.commClient.connect();
 
-        let boardModel = new Board({});
-        let boardLayer = new BoardLayer({ boardModel: boardModel, width: this.canvas.width, height: this.canvas.height });
+        const boardModel = new Board({});
+        const boardLayer = new BoardLayer({ boardModel: boardModel, width: this.canvas.width, height: this.canvas.height });
 
         this.model = new TronModel({ boardModel: boardModel, playerModels: [] });
         this.layer = new TronLayer({ boardLayer: boardLayer, playerLayers: [] });
@@ -630,8 +630,8 @@ class TronGame {
     }
 
     addPlayer(name, positionModel, color = defaultPlayerColor) {
-        let model = new Player({ name: name });
-        let layer = new PlayerLayer({ playerModel: model, boardLayer: this.layer.boardLayer, color: color });
+        const model = new Player({ name: name });
+        const layer = new PlayerLayer({ playerModel: model, boardLayer: this.layer.boardLayer, color: color });
 
         model.init(new BoardPosition(positionModel.col, positionModel.row), positionModel.direction);
 
@@ -654,7 +654,7 @@ class TronGame {
     }
 
     removePlayer(name) {
-        var index = this.findPlayerIndex(name);
+        const index = this.findPlayerIndex(name);
         if (index > -1) {
             this.model.playerModels.splice(index, 1);
             this.layer.playerLayers.splice(index, 1);
@@ -677,14 +677,14 @@ class TronGame {
     }
 
     engine() {        
-        let players = this.model.playerModels;
-        let activePlayers = players.filter(p => p.isPlaying);
+        const players = this.model.playerModels;
+        const activePlayers = players.filter(p => p.isPlaying);
 
         for (let i = 0; i < activePlayers.length; i++) {
             activePlayers[i].move();
         }
 
-        let collisions = this.detectCollisions(activePlayers);
+        const collisions = this.detectCollisions(activePlayers);
         let winnerName = null;
         let gameFinished = false;
 
@@ -716,14 +716,14 @@ class TronGame {
     }
 
     detectCollisions(activePlayers) {
-        let collisions = this.collisionDetection.detect(activePlayers);
+        const collisions = this.collisionDetection.detect(activePlayers);
 
         if (collisions.length > 0) {
-            let isDraw = collisions.length === activePlayers.length;
-            let gameResult = isDraw ? playerGameResultEnum.draw : playerGameResultEnum.loser;
+            const isDraw = collisions.length === activePlayers.length;
+            const gameResult = isDraw ? playerGameResultEnum.draw : playerGameResultEnum.loser;
 
             for (let i = 0; i < collisions.length; i++) {
-                let player = collisions[i].player;
+                const player = collisions[i].player;
                 player.setGameResult(gameResult);
                 player.undoMove();
             }            
@@ -746,7 +746,7 @@ class TronGame {
     }
 
     changeDirection(newDirection) {
-        let directionChanged = this.setPlayerDirection(this.playerName, newDirection);
+        const directionChanged = this.setPlayerDirection(this.playerName, newDirection);
 
         if (directionChanged) {
             this.commClient.changePlayerDirection(newDirection);
@@ -755,9 +755,9 @@ class TronGame {
 
     setPlayerDirection(playerName, newDirection) {
         if (this.state === gameStateEnum.playing) {
-            var index = this.findPlayerIndex(playerName);
+            const index = this.findPlayerIndex(playerName);
             if (index > -1) {
-                let player = this.model.playerModels[index];
+                const player = this.model.playerModels[index];
                 return player.setDirection(newDirection);                
             }
         }

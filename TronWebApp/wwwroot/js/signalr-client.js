@@ -61,8 +61,8 @@ class SignalRClient {
 
     async forfeitGame(playerName) {
         try {
-            let model = { playerName: playerName };
-            let result = await this.connection.invoke("ForfeitGame", model);
+            const model = { playerName: playerName };
+            const result = await this.connection.invoke("ForfeitGame", model);
         } catch (err) {
             console.log(err);
         }
@@ -70,8 +70,8 @@ class SignalRClient {
 
     async findGame(playerName, playerBoard) {
         try {
-            let model = { playerName: playerName, playerBoard: playerBoard };
-            let result = await this.connection.invoke("FindGame", model);
+            const model = { playerName: playerName, playerBoard: playerBoard };
+            const result = await this.connection.invoke("FindGame", model);
         } catch (err) {
             console.log(err);
         }
@@ -79,7 +79,7 @@ class SignalRClient {
     
     async changePlayerDirection(direction) {
         try {
-            let result = await this.connection.invoke("ChangePlayerDirection", { direction });
+            const result = await this.connection.invoke("ChangePlayerDirection", { direction });
         } catch (err) {
             console.log(err);
         }
@@ -87,7 +87,7 @@ class SignalRClient {
 
     async finishGame(winnerName) {
         try {
-            let result = await this.connection.invoke("FinishGame", { winnerName });
+            const result = await this.connection.invoke("FinishGame", { winnerName });
         } catch (err) {
             console.log(err);
         }
